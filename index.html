@@ -1,120 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Word Scramble Review</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-  body {
-  background-color: #fff; /* 하얀 배경 */
-  color: #222; /* 텍스트는 진한 회색 */
-}
-
-@font-face {
-    font-family: 'SeoulHangangM';
-    src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/SeoulHangangM.woff') format('woff');
-    font-weight: normal;
-    font-style: normal;
-}
-    
-.draggable {
-  padding: 8px 14px;
-  background-color: #000; /* 검은색 배경 */
-  color: #fff; /* 흰색 글씨 */
-  border-radius: 8px;
-  cursor: grab;
-  margin: 4px;
-  user-select: none;
-  font-weight: 600;
-  transition: background-color 0.2s ease;
-}
-
-.draggable:active {
-  cursor: grabbing;
-  background-color: #444; /* 클릭 시 살짝 밝아짐 */
-}
-
-.drop-zone {
-  min-height: 60px;
-  border: 2px dashed #000; /* 검은색 점선 */
-  border-radius: 10px;
-  padding: 10px;
-  background-color: #f9f9f9; /* 약간 밝은 회색 배경 */
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.wrong {
-  background-color: #ff0000 !important; /* 틀린 단어는 빨강으로 강조 */
-  color: #fff !important;
-}
-
-.btn {
-  padding: 12px 20px;
-  border-radius: 10px;
-  font-weight: 700;
-  border: 2px solid #000;
-  background-color: #fff;
-  color: #000;
-  cursor: pointer;
-  transition: background-color 0.25s ease, color 0.25s ease;
-}
-
-.btn:hover {
-  background-color: #000;
-  color: #fff;
-}
-
-.page .title {
-  color: #000;
-}
-
-nav button.btn {
-  margin-right: 10px;
-  font-size: 1rem;
-}
-</style>
+    @font-face {
+      font-family: 'SeoulHangangM';
+      src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/SeoulHangangM.woff') format('woff');
+      font-weight: normal;
+      font-style: normal;
+    }
+    body {
+      font-family: 'SeoulHangangM', sans-serif;
+      background-color: #f5f5f5;
+      color: #222;
+    }
+    .draggable {
+      padding: 8px 14px;
+      background-color: #000;
+      color: #fff;
+      border-radius: 8px;
+      cursor: grab;
+      margin: 4px;
+      user-select: none;
+      font-weight: 600;
+      transition: background-color 0.2s ease;
+    }
+    .draggable:active {
+      cursor: grabbing;
+      background-color: #444;
+    }
+    .drop-zone {
+      min-height: 60px;
+      border: 2px dashed #000;
+      border-radius: 10px;
+      padding: 10px;
+      background-color: #f9f9f9;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .wrong {
+      background-color: #ff0000 !important;
+      color: #fff !important;
+    }
+  </style>
 </head>
-<body class="p-6">
-  <div class="max-w-4xl mx-auto bg-gray-900 p-6 rounded-xl shadow-xl">
-    <nav class="mb-6 flex space-x-4">
-      <button onclick="showPage('home')" class="btn btn-primary">Home</button>
-      <button onclick="showPage('test')" class="btn btn-primary">Test</button>
-      <button onclick="showPage('result')" class="btn btn-primary">Results</button>
-      <button onclick="showPage('settings')" class="btn btn-primary">Settings</button>
+<body class="flex items-center justify-center min-h-screen p-4">
+  <div class="w-full max-w-4xl bg-white shadow-2xl rounded-2xl p-8">
+    <nav class="mb-6 flex justify-center gap-4">
+      <button onclick="showPage('home')" class="btn">Home</button>
+      <button onclick="showPage('test')" class="btn">Test</button>
+      <button onclick="showPage('result')" class="btn">Results</button>
+      <button onclick="showPage('settings')" class="btn">Settings</button>
     </nav>
 
     <!-- Home -->
     <div id="home" class="page">
-      <h1 class="text-3xl font-bold mb-4 title">Word Scramble</h1>
-      <p class="mb-2">.txt 또는 .csv 파일 업로드 (빈 줄 → 문단 구분, 없으면 10문장 묶음 처리)</p>
-      <input type="file" id="fileInput" accept=".txt,.csv" class="mb-4"/>
+      <h1 class="text-4xl font-bold mb-4 text-center">Word Scramble</h1>
+      <p class="mb-4 text-center">.txt 또는 .csv 파일 업로드 (빈 줄 → 문단 구분, 없으면 10문장 묶음 처리)</p>
+      <div class="flex justify-center">
+        <input type="file" id="fileInput" accept=".txt,.csv" class="border p-2 rounded-md"/>
+      </div>
     </div>
 
     <!-- Test -->
     <div id="test" class="page hidden">
-      <h2 class="text-2xl font-semibold mb-2 title">Scramble Test</h2>
-      <div id="sentenceContainer" class="mb-4"></div>
+      <h2 class="text-2xl font-semibold mb-4 text-center">Scramble Test</h2>
+      <div id="sentenceContainer" class="mb-4 text-center font-medium"></div>
       <div id="dropZone" class="drop-zone mb-4"></div>
-      <div class="flex space-x-2">
-        <button id="checkButton" class="btn btn-accent">Check Answer</button>
-        <button onclick="saveProgress()" class="btn btn-primary">Save Progress</button>
+      <div class="flex justify-center gap-4">
+        <button id="checkButton" class="btn">Check Answer</button>
+        <button onclick="saveProgress()" class="btn">Save Progress</button>
       </div>
     </div>
 
     <!-- Results -->
     <div id="result" class="page hidden">
-      <h2 class="text-2xl font-semibold mb-2 title">Retry Analysis</h2>
+      <h2 class="text-2xl font-semibold mb-4 text-center">Retry Analysis</h2>
       <canvas id="errorChart"></canvas>
     </div>
 
     <!-- Settings -->
     <div id="settings" class="page hidden">
-      <h2 class="text-2xl font-semibold mb-2 title">Settings</h2>
-      <button onclick="resetData()" class="btn btn-danger">Reset All Data</button>
+      <h2 class="text-2xl font-semibold mb-4 text-center">Settings</h2>
+      <div class="flex justify-center">
+        <button onclick="resetData()" class="btn bg-red-500 hover:bg-red-600 text-white">Reset All Data</button>
+      </div>
     </div>
   </div>
 
@@ -143,14 +118,12 @@ nav button.btn {
         });
         if (cur.length) paras.push(cur);
         if (!paras.length) {
-          // no paragraphs → create 10-sentence blocks
           const flat = lines.filter(l=>l.trim()).map(l=>l.replace(/\.$/,''));
           for (let i=0;i<flat.length;i+=10) blocks.push(flat.slice(i,i+10));
         } else blocks = paras;
         blocks = blocks.filter(b=>b.length);
         retryCounts = blocks.map(b=>Array(b.length).fill(0));
-        blockIndex=sentenceIndex=0;
-        reviewMode=false;
+        blockIndex=sentenceIndex=0; reviewMode=false;
         saveProgress();
       }
       loadProgress();
@@ -161,22 +134,16 @@ nav button.btn {
       container.innerHTML='';
       const block = blocks[blockIndex];
       if (!reviewMode && sentenceIndex >= block.length){
-        // switch to review for wrong ones
         const wrongs = retryCounts[blockIndex]
           .map((c,i)=>c>0?i:-1).filter(i=>i>=0);
-        if (wrongs.length){
-          reviewMode=true; blockWrongs = wrongs; sentenceIndex=0;
-        } else {
-          goNextBlock(); return;
-        }
+        if (wrongs.length){ reviewMode=true; blockWrongs = wrongs; sentenceIndex=0; }
+        else { goNextBlock(); return; }
       }
-      if (reviewMode && sentenceIndex>=blockWrongs.length){
-        goNextBlock(); return;
-      }
+      if (reviewMode && sentenceIndex>=blockWrongs.length){ goNextBlock(); return; }
       const idx = reviewMode ? blockWrongs[sentenceIndex] : sentenceIndex;
       const sent = blocks[blockIndex][idx];
       const words = sent.split(' ').sort(()=>Math.random()-0.5);
-      container.textContent = `Block ${blockIndex+1}/${blocks.length}, Sentence ${idx+1}/${blocks[blockIndex].length}`;
+      container.textContent = `Block ${blockIndex+1}/${blocks.length}, Sentence ${idx+1}/${block.length}`;
       words.forEach(w=>{
         const sp = document.createElement('span');
         sp.textContent = w;
@@ -213,7 +180,7 @@ nav button.btn {
     function goNextBlock(){
       blockIndex++; sentenceIndex=0; reviewMode=false;
       if (blockIndex>=blocks.length){
-        container.innerHTML='<strong>🎉 모든 블록 완료!</strong>';
+        container.innerHTML='<strong class="text-green-600">🎉 모든 블록 완료!</strong>';
         return;
       }
       loadSentence();
@@ -230,19 +197,17 @@ nav button.btn {
             label:'Retry',
             data:flat,
             backgroundColor:'#66c2a5',
-            borderColor:'#2e8b57', borderWidth:1
+            borderColor:'#2e8b57',
+            borderWidth:1
           }]
         },
         options: {
-  plugins: {
-    legend: { labels: { color: '#000' } }
-  },
-  scales: {
-    x: { ticks: { color: '#000' } },
-    y: { beginAtZero: true, ticks: { color: '#000' } }
-  }
-}
-
+          plugins: { legend: { labels: { color: '#000' } } },
+          scales: {
+            x: { ticks: { color: '#000' } },
+            y: { beginAtZero: true, ticks: { color: '#000' } }
+          }
+        }
       });
     }
 
@@ -263,11 +228,29 @@ nav button.btn {
       if (!fileHash) return localStorage.removeItem('scramble_'+fileHash);
       location.reload();
     }
-    function showPage(p){ document.querySelectorAll('.page').forEach(e=>e.classList.add('hidden')); document.getElementById(p).classList.remove('hidden'); }
+    function showPage(p){
+      document.querySelectorAll('.page').forEach(e=>e.classList.add('hidden'));
+      document.getElementById(p).classList.remove('hidden');
+    }
     async function hashString(s){
       const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
       return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('');
     }
   </script>
+  <style>
+    .btn {
+      padding: 10px 16px;
+      border-radius: 9999px;
+      font-weight: 600;
+      border: 2px solid #000;
+      background-color: #fff;
+      color: #000;
+      transition: all 0.3s ease;
+    }
+    .btn:hover {
+      background-color: #000;
+      color: #fff;
+    }
+  </style>
 </body>
 </html>
