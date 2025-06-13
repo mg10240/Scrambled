@@ -4,471 +4,529 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Word Scramble Trainer</title>
-
-  <!-- Tailwind + Radix colors -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/@radix-ui/colors@latest/blackA.css" rel="stylesheet">
-
   <style>
-    /* 기본 폰트와 배경 */
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: #f9fafb;
-      color: #111827;
+      color: #1e40af; /* 진한 파란색 */
+      margin: 0; padding: 20px;
       min-height: 100vh;
-    }
-    /* 홈 탭 파란 테두리 - 처음에만 */
-    #home.first-visit {
-      border: 3px solid #2563eb;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 0 12px rgb(37 99 235 / 0.5);
-      transition: border-color 0.3s ease;
-    }
-    /* input box 기본 스타일 */
-    input[type="text"] {
-      width: 100%;
-      padding: 0.4rem 0.6rem;
-      font-size: 1rem;
-      border: 2px solid #d1d5db;
-      border-radius: 8px;
-      transition: border-color 0.3s ease;
-    }
-    input[type="text"]:focus {
-      outline: none;
-      border-color: #2563eb;
-      box-shadow: 0 0 6px #2563ebaa;
-    }
-    input.wrong {
-      border-color: #dc2626 !important;
-      box-shadow: 0 0 8px #dc2626aa !important;
-      background-color: #fee2e2;
-    }
-    /* 버튼 공통 스타일 */
-    .btn {
-      background-color: #2563eb;
-      color: white;
-      font-weight: 600;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgb(37 99 235 / 0.4);
-      transition: background-color 0.3s ease, box-shadow 0.3s ease;
-      cursor: pointer;
-      user-select: none;
-      border: none;
-    }
-    .btn:hover {
-      background-color: #1d4ed8;
-      box-shadow: 0 4px 14px rgb(29 78 216 / 0.7);
-    }
-    .btn:disabled {
-      background-color: #93c5fd;
-      cursor: not-allowed;
-      box-shadow: none;
-    }
-
-    nav button {
-      margin: 0 0.25rem;
-    }
-
-    /* 페이징 버튼 그룹 */
-    #pagingControls {
-      display: flex;
-      justify-content: space-between;
-      margin: 1rem 0;
-    }
-
-    /* 애니메이션 */
-    .fade-in {
-      animation: fadeIn 0.4s ease forwards;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* 파일 업로드 input */
-    input[type="file"] {
-      cursor: pointer;
-      border: 1.5px solid #2563eb;
-      border-radius: 8px;
-      padding: 0.4rem 0.6rem;
-      background: #e0e7ff;
-      color: #1e3a8a;
-      font-weight: 600;
-    }
-    input[type="file"]:hover {
-      background: #c7d2fe;
-    }
-
-    /* 네비게이션 바 스타일 */
-    nav {
-      background: white;
-      padding: 0.6rem 1rem;
-      box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
-      border-radius: 12px;
-      display: flex;
-      justify-content: center;
-      margin-bottom: 1.5rem;
-      user-select: none;
-    }
-    nav button {
-      background: transparent;
-      color: #2563eb;
-      font-weight: 700;
-      font-size: 1.1rem;
-      padding: 0.25rem 1rem;
-      border-radius: 8px;
-      border: none;
-      transition: background-color 0.3s ease;
-    }
-    nav button:hover {
-      background: #e0e7ff;
-      cursor: pointer;
-    }
-    nav button.active {
-      background: #2563eb;
-      color: white;
-      cursor: default;
-      box-shadow: 0 2px 10px rgb(37 99 235 / 0.6);
-    }
-
-    /* 문장 입력창 리스트 */
-    #sentencesContainer {
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      align-items: center;
+    }
+    h1 {
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: #1e40af;
+    }
+    .pill {
+      display: inline-block;
+      background-color: #bfdbfe; /* 밝은 하늘색 */
+      color: #1e40af; /* 진한 파란색 */
+      padding: 6px 12px;
+      border-radius: 9999px;
+      margin: 3px;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.25s, color 0.25s;
+      box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .pill:hover {
+      background-color: #93c5fd;
+    }
+    .pill.selected {
+      background-color: #1e40af;
+      color: #bfdbfe;
+      box-shadow: 0 0 8px #3b82f6;
+    }
+    .sentence-block {
+      margin-bottom: 1.5rem;
+      border: 1px solid #93c5fd;
+      border-radius: 0.75rem;
+      background: white;
+      padding: 1rem 1.25rem;
+      width: 100%;
+      max-width: 700px;
+      box-shadow: 0 2px 10px rgb(59 130 246 / 0.2);
+    }
+    .sentence-label {
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+      color: #2563eb;
+    }
+    .word-choices, .user-line {
+      min-height: 2.8rem;
+      padding: 4px 0;
+      border: 1px solid #cbd5e1;
+      border-radius: 0.5rem;
+      background: #f1f5f9;
+      margin-bottom: 0.75rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+    .user-line {
+      background: #dbeafe;
+      border-color: #3b82f6;
+      min-height: 3rem;
+    }
+    .word-choices .pill {
+      box-shadow: none;
+    }
+    .user-line .pill {
+      box-shadow: 0 0 6px #3b82f6;
+    }
+    .wrong {
+      border-color: #dc2626 !important;
+      background-color: #fee2e2 !important;
+      color: #b91c1c !important;
+      box-shadow: none !important;
+    }
+    .btn {
+      background-color: #1e40af;
+      color: white;
+      padding: 0.6rem 1.2rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: background-color 0.3s;
+      user-select: none;
+      margin-right: 0.5rem;
+    }
+    .btn:hover {
+      background-color: #2563eb;
+    }
+    .btn:disabled {
+      background-color: #a5b4fc;
+      cursor: not-allowed;
+    }
+    .nav {
+      margin-bottom: 2rem;
+    }
+    .nav button {
+      margin-right: 1rem;
     }
   </style>
 </head>
 <body>
 
-  <div class="max-w-4xl mx-auto p-6 bg-white rounded-xl shadow-lg mt-6">
-    <nav>
-      <button id="navHome" class="active" type="button">홈</button>
-      <button id="navTest" type="button">테스트</button>
-      <button id="navResult" type="button">리뷰</button>
-      <button id="navSettings" type="button">설정</button>
-    </nav>
+  <h1>Word Scramble Trainer</h1>
 
-    <!-- Home -->
-    <section id="home" class="fade-in first-visit">
-      <h1 class="text-3xl font-bold mb-4">Word Scramble</h1>
-      <p class="mb-6 text-gray-700">
-        .txt 또는 .csv 파일을 업로드하세요.<br />
-        빈 줄은 문단 구분으로 인식하며,<br />
-        없으면 10문장 단위로 처리됩니다.
-      </p>
-      <input type="file" id="fileInput" accept=".txt,.csv" />
-    </section>
-
-    <!-- Test -->
-    <section id="test" class="hidden fade-in">
-      <h2 class="text-2xl font-semibold mb-4">문장 배열 맞추기</h2>
-      <div id="blockInfo" class="mb-3 font-semibold text-gray-800"></div>
-
-      <div id="sentencesContainer"></div>
-
-      <div id="pagingControls" class="mb-6">
-        <button id="prevPage" class="btn" disabled>이전</button>
-        <button id="nextPage" class="btn" disabled>다음</button>
-      </div>
-
-      <button id="checkAnswers" class="btn w-full">정답 확인</button>
-    </section>
-
-    <!-- Result -->
-    <section id="result" class="hidden fade-in">
-      <h2 class="text-2xl font-semibold mb-4">오답 분석 그래프</h2>
-      <canvas id="errorChart" class="w-full max-h-96"></canvas>
-    </section>
-
-    <!-- Settings -->
-    <section id="settings" class="hidden fade-in">
-      <h2 class="text-2xl font-semibold mb-6">설정</h2>
-      <button id="downloadProgress" class="btn mb-4 w-full">학습 데이터 다운로드</button>
-      <input type="file" id="loadProgress" accept="application/json" />
-    </section>
+  <div class="nav">
+    <button class="btn" id="navHome">홈</button>
+    <button class="btn" id="navTest" disabled>테스트</button>
+    <button class="btn" id="navReview" disabled>리뷰 (미구현)</button>
+    <button class="btn" id="navSettings">설정</button>
   </div>
 
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <div id="pageHome" class="page">
+    <p class="mb-4 max-w-xl text-center">
+      .txt 또는 .csv 파일을 업로드하세요.<br>
+      빈 줄은 문단 구분, 없으면 10문장 단위로 처리됩니다.<br>
+      (현재 테스트는 3문장 단위씩 묶어 진행합니다.)
+    </p>
+    <input type="file" id="fileInput" accept=".txt,.csv" />
+  </div>
+
+  <div id="pageTest" class="page" style="display:none; width: 100%; max-width: 720px;">
+    <div id="blocksContainer"></div>
+
+    <div style="margin-top:1rem; display:flex; justify-content:center; align-items:center;">
+      <button id="prevBlockBtn" class="btn" disabled>이전</button>
+      <button id="checkAnswersBtn" class="btn" style="margin: 0 1rem;">정답 확인</button>
+      <button id="nextBlockBtn" class="btn" disabled>다음</button>
+    </div>
+  </div>
+
+  <div id="pageSettings" class="page" style="display:none; max-width: 720px;">
+    <h2 class="text-xl font-bold mb-2">학습 데이터 관리</h2>
+    <button class="btn" id="downloadProgressBtn">학습 데이터 다운로드</button>
+    <input type="file" id="loadProgressInput" accept="application/json" style="margin-top: 1rem;" />
+  </div>
 
   <script>
-    (() => {
-      'use strict';
+    // 상태 변수
+    let blocks = []; // SentenceBlock: [[sentence1Words], [sentence2Words], [sentence3Words]]
+    let originalSentences = []; // 원본 문장(문장 단위 텍스트)
+    let currentBlockIdx = 0;
 
-      // --- 상태 변수 ---
-      let rawText = '';
-      let blocks = [];      // 문단 단위 분리된 배열
-      let allSentences = []; // 모든 문장 flat 배열 (문단, 문장구분없이)
-      let currentBlockIndex = 0;
-      let currentPageIndex = 0; // 3문장씩 페이징 처리
-      const SENTENCES_PER_PAGE = 3;
-      let userInputs = [];  // [[string, ...], ...] 각 문장에 대한 유저 입력 (2차원)
+    // 선택 단어 상태: blocks index -> sentence index -> selected words array
+    let selectedWordsState = [];
 
-      // --- DOM 참조 ---
-      const homeSection = document.getElementById('home');
-      const testSection = document.getElementById('test');
-      const resultSection = document.getElementById('result');
-      const settingsSection = document.getElementById('settings');
+    // 정답 여부 저장 (blocks index -> sentence index -> boolean)
+    let answerCorrectness = [];
 
-      const navHome = document.getElementById('navHome');
-      const navTest = document.getElementById('navTest');
-      const navResult = document.getElementById('navResult');
-      const navSettings = document.getElementById('navSettings');
+    // DOM 참조
+    const fileInput = document.getElementById('fileInput');
+    const blocksContainer = document.getElementById('blocksContainer');
+    const prevBlockBtn = document.getElementById('prevBlockBtn');
+    const nextBlockBtn = document.getElementById('nextBlockBtn');
+    const checkAnswersBtn = document.getElementById('checkAnswersBtn');
 
-      const fileInput = document.getElementById('fileInput');
-      const sentencesContainer = document.getElementById('sentencesContainer');
-      const blockInfo = document.getElementById('blockInfo');
+    // 네비게이션 버튼
+    const navHome = document.getElementById('navHome');
+    const navTest = document.getElementById('navTest');
+    const navSettings = document.getElementById('navSettings');
 
-      const prevPageBtn = document.getElementById('prevPage');
-      const nextPageBtn = document.getElementById('nextPage');
-      const checkAnswersBtn = document.getElementById('checkAnswers');
+    // 페이지들
+    const pageHome = document.getElementById('pageHome');
+    const pageTest = document.getElementById('pageTest');
+    const pageSettings = document.getElementById('pageSettings');
 
-      const downloadProgressBtn = document.getElementById('downloadProgress');
-      const loadProgressInput = document.getElementById('loadProgress');
+    // 네비게이션 함수
+    function showPage(page) {
+      [pageHome, pageTest, pageSettings].forEach(p => p.style.display = 'none');
+      if(page === 'home') pageHome.style.display = 'block';
+      else if(page === 'test') pageTest.style.display = 'block';
+      else if(page === 'settings') pageSettings.style.display = 'block';
 
-      // --- 네비게이션 함수 ---
-      function setActiveTab(tabName) {
-        // 모든 섹션 숨기기
-        [homeSection, testSection, resultSection, settingsSection].forEach(sec => sec.classList.add('hidden'));
-        // 모든 nav 버튼 비활성화
-        [navHome, navTest, navResult, navSettings].forEach(btn => btn.classList.remove('active'));
+      // 버튼 활성/비활성 처리
+      navTest.disabled = blocks.length === 0;
+      prevBlockBtn.disabled = currentBlockIdx === 0;
+      nextBlockBtn.disabled = currentBlockIdx === blocks.length - 1 || blocks.length === 0;
+    }
 
-        switch(tabName) {
-          case 'home':
-            homeSection.classList.remove('hidden');
-            navHome.classList.add('active');
-            break;
-          case 'test':
-            testSection.classList.remove('hidden');
-            navTest.classList.add('active');
-            break;
-          case 'result':
-            resultSection.classList.remove('hidden');
-            navResult.classList.add('active');
-            break;
-          case 'settings':
-            settingsSection.classList.remove('hidden');
-            navSettings.classList.add('active');
-            break;
-        }
-        // 홈 탭 파란 테두리 최초 방문시에만 표시하고, 다른 탭 갔다 오면 제거
-        if (tabName !== 'home' && homeSection.classList.contains('first-visit')) {
-          homeSection.classList.remove('first-visit');
+    // 문장 분리 함수 (마침표, 느낌표, 물음표 기준)
+    function splitToSentences(text) {
+      // 문장 구분 문자 포함해서 분리, 빈 문장 제거
+      const raw = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      // .!? 중복 마침표 제거 후 split
+      const regex = /([.!?])\s+|\n+/g;
+      let sentences = [];
+      let start = 0;
+      let match;
+      while ((match = regex.exec(raw)) !== null) {
+        const end = match.index + 1;
+        let s = raw.substring(start, end).trim();
+        if(s.length > 0) sentences.push(s);
+        start = regex.lastIndex;
+      }
+      // 마지막 문장 처리
+      if(start < raw.length) {
+        let lastS = raw.substring(start).trim();
+        if(lastS.length > 0) sentences.push(lastS);
+      }
+      return sentences;
+    }
+
+    // 문장 3개씩 묶기
+    function groupSentences(sentences) {
+      const groups = [];
+      for(let i=0; i<sentences.length; i+=3) {
+        groups.push(sentences.slice(i, i+3));
+      }
+      return groups;
+    }
+
+    // 문장 -> 단어 배열 (공백 기준, 쉼표 등 제거)
+    function sentenceToWords(sentence) {
+      // 쉼표, 쌍따옴표, 작은따옴표 제거, 앞뒤 공백 제거
+      const cleaned = sentence.replace(/[,"'“”‘’]/g, '').trim();
+      // 공백 기준 분리
+      const words = cleaned.split(/\s+/);
+      return words.filter(w => w.length > 0);
+    }
+
+    // 배열 무작위 섞기(Fisher-Yates)
+    function shuffleArray(arr) {
+      let a = arr.slice();
+      for(let i = a.length -1; i>0; i--) {
+        const j = Math.floor(Math.random() * (i+1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    // 선택 단어 상태 초기화
+    function initSelectedWordsState() {
+      selectedWordsState = [];
+      answerCorrectness = [];
+      for(let b=0; b<blocks.length; b++) {
+        selectedWordsState[b] = [];
+        answerCorrectness[b] = [];
+        for(let s=0; s<blocks[b].length; s++) {
+          selectedWordsState[b][s] = [];
+          answerCorrectness[b][s] = null;
         }
       }
+    }
 
-      navHome.onclick = () => setActiveTab('home');
-      navTest.onclick = () => setActiveTab('test');
-      navResult.onclick = () => setActiveTab('result');
-      navSettings.onclick = () => setActiveTab('settings');
+    // 테스트 페이지 렌더링 (현재 블록)
+    function renderCurrentBlock() {
+      blocksContainer.innerHTML = '';
+      if(blocks.length === 0) return;
 
-      // --- 문단/문장 분리 함수 ---
-      function splitTextToBlocks(text) {
-        // 빈 줄(\n\n 이상)을 기준으로 문단 분리
-        let paragraphs = text.split(/\n\s*\n/).map(p => p.trim()).filter(p => p.length > 0);
-        if (paragraphs.length === 0) return [];
+      const block = blocks[currentBlockIdx];
+      const fragment = document.createDocumentFragment();
 
-        // 각 문단 별 문장 단위 분리(마침표, 느낌표, 물음표 등)
-        const sentenceRegex = /.*?[.!?]+(?=\s|$)|.+$/g;
+      block.forEach((sentenceWords, sIdx) => {
+        const sentenceDiv = document.createElement('div');
+        sentenceDiv.className = 'sentence-block';
 
-        // 각 문단에서 문장별 배열 생성
-        const blocks = paragraphs.map(paragraph => {
-          const sentences = paragraph.match(sentenceRegex) || [paragraph];
-          return sentences.map(s => s.trim()).filter(s => s.length > 0);
-        });
+        // 문장 라벨
+        const label = document.createElement('div');
+        label.className = 'sentence-label';
+        label.textContent = `문장 ${currentBlockIdx*3 + sIdx + 1}`;
+        sentenceDiv.appendChild(label);
 
-        // 빈 줄이 없으면(문단이 하나뿐이면) 10문장 단위로 나누기
-        if (paragraphs.length === 1) {
-          const allSents = blocks[0];
-          const chunked = [];
-          for (let i = 0; i < allSents.length; i += 10) {
-            chunked.push(allSents.slice(i, i + 10));
-          }
-          return chunked;
-        }
+        // 선택된 단어 줄 (user-line)
+        const userLine = document.createElement('div');
+        userLine.className = 'user-line';
+        userLine.dataset.sentenceIdx = String(sIdx);
+        sentenceDiv.appendChild(userLine);
 
-        return blocks;
-      }
+        // 단어 선택 영역 (shuffled word pills)
+        const choices = document.createElement('div');
+        choices.className = 'word-choices';
+        sentenceDiv.appendChild(choices);
 
-      // --- 페이지 내 3문장 단위 페이징 함수 ---
-      function getPageSentences(block, pageIndex) {
-        const start = pageIndex * SENTENCES_PER_PAGE;
-        return block.slice(start, start + SENTENCES_PER_PAGE);
-      }
+        // 무작위 섞인 단어들
+        const shuffled = shuffleArray(sentenceWords);
+        shuffled.forEach(word => {
+          const pill = document.createElement('span');
+          pill.className = 'pill';
+          pill.textContent = word;
+          pill.dataset.word = word;
+          pill.dataset.sentenceIdx = String(sIdx);
 
-      // --- 테스트 문장 표시 함수 ---
-      function renderTestPage() {
-        if (!blocks.length) {
-          sentencesContainer.innerHTML = '<p class="text-gray-500">파일을 먼저 업로드하세요.</p>';
-          checkAnswersBtn.disabled = true;
-          prevPageBtn.disabled = true;
-          nextPageBtn.disabled = true;
-          blockInfo.textContent = '';
-          return;
-        }
+          pill.addEventListener('click', () => {
+            const s = parseInt(pill.dataset.sentenceIdx);
+            const wordText = pill.dataset.word;
 
-        const block = blocks[currentBlockIndex];
-        const totalPages = Math.ceil(block.length / SENTENCES_PER_PAGE);
+            // 현재 선택 단어 배열 참조
+            const selected = selectedWordsState[currentBlockIdx][s];
+            const idx = selected.indexOf(wordText);
 
-        blockInfo.textContent = `문단 ${currentBlockIndex + 1} / ${blocks.length} — 페이지 ${currentPageIndex + 1} / ${totalPages}`;
-        checkAnswersBtn.disabled = false;
-
-        // 페이징 버튼 활성화/비활성화
-        prevPageBtn.disabled = currentPageIndex === 0;
-        nextPageBtn.disabled = currentPageIndex >= totalPages - 1;
-
-        // 현재 페이지 문장들
-        const pageSents = getPageSentences(block, currentPageIndex);
-
-        // 입력창 렌더링
-        sentencesContainer.innerHTML = '';
-        pageSents.forEach((sentence, idx) => {
-          const div = document.createElement('div');
-          div.className = 'fade-in';
-
-          const input = document.createElement('input');
-          input.type = 'text';
-          input.value = userInputs[currentBlockIndex]?.[currentPageIndex * SENTENCES_PER_PAGE + idx] || '';
-          input.placeholder = `문장 ${currentPageIndex * SENTENCES_PER_PAGE + idx + 1} 입력`;
-          input.autocomplete = 'off';
-
-          input.oninput = () => {
-            if (!userInputs[currentBlockIndex]) userInputs[currentBlockIndex] = [];
-            userInputs[currentBlockIndex][currentPageIndex * SENTENCES_PER_PAGE + idx] = input.value;
-            input.classList.remove('wrong');
-          };
-
-          div.appendChild(input);
-          sentencesContainer.appendChild(div);
-        });
-      }
-
-      // --- 정답 확인 ---
-      function checkAnswers() {
-        const block = blocks[currentBlockIndex];
-        const totalPages = Math.ceil(block.length / SENTENCES_PER_PAGE);
-        const pageSents = getPageSentences(block, currentPageIndex);
-
-        let allCorrect = true;
-        const inputs = sentencesContainer.querySelectorAll('input[type="text"]');
-
-        inputs.forEach((input, idx) => {
-          const correct = pageSents[idx].trim();
-          const userAnswer = input.value.trim();
-          if (userAnswer !== correct) {
-            input.classList.add('wrong');
-            allCorrect = false;
-          } else {
-            input.classList.remove('wrong');
-          }
-        });
-
-        if (allCorrect) {
-          alert('모든 문장이 정확합니다!');
-          // 자동 다음 페이지 이동 (있으면)
-          if (currentPageIndex < totalPages - 1) {
-            currentPageIndex++;
-            renderTestPage();
-          }
-          // 마지막 페이지면 자동으로 다음 문단으로
-          else if (currentBlockIndex < blocks.length - 1) {
-            currentBlockIndex++;
-            currentPageIndex = 0;
-            renderTestPage();
-          }
-        }
-      }
-
-      // --- 파일 읽기 ---
-      fileInput.addEventListener('change', e => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = evt => {
-          rawText = evt.target.result;
-          blocks = splitTextToBlocks(rawText);
-          userInputs = blocks.map(block => Array(block.length).fill(''));
-          currentBlockIndex = 0;
-          currentPageIndex = 0;
-          setActiveTab('test');
-          renderTestPage();
-        };
-        reader.readAsText(file, 'UTF-8');
-      });
-
-      // --- 페이징 버튼 이벤트 ---
-      prevPageBtn.onclick = () => {
-        if (currentPageIndex > 0) {
-          currentPageIndex--;
-          renderTestPage();
-        }
-      };
-      nextPageBtn.onclick = () => {
-        const block = blocks[currentBlockIndex];
-        const totalPages = Math.ceil(block.length / SENTENCES_PER_PAGE);
-        if (currentPageIndex < totalPages - 1) {
-          currentPageIndex++;
-          renderTestPage();
-        }
-      };
-
-      checkAnswersBtn.onclick = checkAnswers;
-
-      // --- 데이터 다운로드 ---
-      downloadProgressBtn.onclick = () => {
-        const data = {
-          rawText,
-          userInputs,
-          currentBlockIndex,
-          currentPageIndex
-        };
-        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'word_scramble_save.json';
-        a.click();
-        URL.revokeObjectURL(a.href);
-      };
-
-      // --- 데이터 불러오기 ---
-      loadProgressInput.addEventListener('change', e => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = evt => {
-          try {
-            const data = JSON.parse(evt.target.result);
-            rawText = data.rawText || '';
-            blocks = splitTextToBlocks(rawText);
-            userInputs = data.userInputs || blocks.map(block => Array(block.length).fill(''));
-            currentBlockIndex = data.currentBlockIndex || 0;
-            currentPageIndex = data.currentPageIndex || 0;
-
-            if (!blocks.length) {
-              alert('불러온 데이터가 올바르지 않습니다.');
-              return;
+            if(idx === -1) {
+              // 선택되지 않은 단어면 선택영역에 추가
+              selected.push(wordText);
+              pill.classList.add('selected');
+              updateUserLine(s);
+            } else {
+              // 이미 선택된 단어면 해제
+              selected.splice(idx, 1);
+              pill.classList.remove('selected');
+              updateUserLine(s);
             }
-            setActiveTab('test');
-            renderTestPage();
-          } catch (err) {
-            alert('JSON 파일 형식이 올바르지 않습니다.');
-          }
-        };
-        reader.readAsText(file, 'UTF-8');
+          });
+
+          choices.appendChild(pill);
+        });
+
+        // 정답 틀렸을 때 스타일링
+        if(answerCorrectness[currentBlockIdx][sIdx] === false) {
+          userLine.classList.add('wrong');
+        } else {
+          userLine.classList.remove('wrong');
+        }
+
+        fragment.appendChild(sentenceDiv);
+
+        // userLine 업데이트 함수
+        function updateUserLine(sentenceIdx) {
+          if(sentenceIdx !== sIdx) return;
+          const line = userLine;
+          line.innerHTML = '';
+          selectedWordsState[currentBlockIdx][sentenceIdx].forEach(w => {
+            const selPill = document.createElement('span');
+            selPill.className = 'pill selected';
+            selPill.textContent = w;
+            selPill.dataset.word = w;
+            selPill.dataset.sentenceIdx = String(sentenceIdx);
+
+            // 클릭하면 선택 해제
+            selPill.addEventListener('click', () => {
+              const s = parseInt(selPill.dataset.sentenceIdx);
+              const wordText = selPill.dataset.word;
+              const selected = selectedWordsState[currentBlockIdx][s];
+              const idx = selected.indexOf(wordText);
+              if(idx !== -1) {
+                selected.splice(idx, 1);
+                selPill.classList.remove('selected');
+                // word pill도 해제 표시
+                // 모든 word pills 중에서 같은 단어, 같은 sentenceIdx인 것 찾아서 제거
+                [...choices.children].forEach(pill => {
+                  if(pill.dataset.word === wordText && pill.dataset.sentenceIdx === String(s)) {
+                    pill.classList.remove('selected');
+                  }
+                });
+                updateUserLine(s);
+              }
+            });
+            line.appendChild(selPill);
+          });
+        }
+
+        // 초기 userLine 렌더링
+        updateUserLine(sIdx);
       });
 
-      // --- 페이지 초기 세팅 ---
-      setActiveTab('home');
+      blocksContainer.appendChild(fragment);
 
-      // --- 포커스 outline 문제 방지 ---
-      window.onload = () => {
-        if (document.activeElement) document.activeElement.blur();
+      // 버튼 상태 업데이트
+      prevBlockBtn.disabled = currentBlockIdx === 0;
+      nextBlockBtn.disabled = currentBlockIdx === blocks.length - 1;
+    }
+
+    // 정답 확인 함수
+    function checkAnswers() {
+      const block = blocks[currentBlockIdx];
+      let allCorrect = true;
+
+      block.forEach((sentenceWords, sIdx) => {
+        // 정답 단어 배열 (원본 순서)
+        const answer = sentenceWords;
+        const userSelected = selectedWordsState[currentBlockIdx][sIdx];
+
+        // 길이 및 단어 순서 체크
+        const correct = 
+          userSelected.length === answer.length &&
+          userSelected.every((w, i) => w === answer[i]);
+
+        answerCorrectness[currentBlockIdx][sIdx] = correct;
+
+        if(!correct) allCorrect = false;
+      });
+
+      renderCurrentBlock();
+
+      if(allCorrect) {
+        alert('모든 문장이 정확히 맞았습니다! 다음 블록으로 이동하세요.');
+      } else {
+        alert('틀린 문장이 있습니다. 빨간색으로 표시된 문장을 다시 확인하세요.');
+      }
+    }
+
+    // 파일 업로드 후 처리
+    fileInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if(!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const content = reader.result;
+        if(typeof content !== 'string') return;
+
+        // 문장 분리
+        const sentences = splitToSentences(content);
+        originalSentences = sentences;
+
+        // 3문장씩 묶기
+        const grouped = groupSentences(sentences);
+
+        // 각 문장을 단어 배열로 변환
+        blocks = grouped.map(sentencesInGroup => {
+          return sentencesInGroup.map(sentenceToWords);
+        });
+
+        currentBlockIdx = 0;
+        initSelectedWordsState();
+        answerCorrectness = answerCorrectness.map(
+          block => block.map(() => null)
+        );
+
+        alert(`총 ${sentences.length}문장, ${blocks.length}개 블록으로 분할 완료`);
+
+        navTest.disabled = false;
+        showPage('test');
+        renderCurrentBlock();
       };
-    })();
+      reader.readAsText(file);
+    });
+
+    prevBlockBtn.addEventListener('click', () => {
+      if(currentBlockIdx > 0) {
+        currentBlockIdx--;
+        renderCurrentBlock();
+      }
+    });
+    nextBlockBtn.addEventListener('click', () => {
+      if(currentBlockIdx < blocks.length -1) {
+        currentBlockIdx++;
+        renderCurrentBlock();
+      }
+    });
+    checkAnswersBtn.addEventListener('click', () => {
+      checkAnswers();
+    });
+
+    // 네비게이션 버튼
+    navHome.addEventListener('click', () => showPage('home'));
+    navTest.addEventListener('click', () => {
+      if(blocks.length === 0) {
+        alert('먼저 파일을 업로드하세요.');
+        return;
+      }
+      showPage('test');
+    });
+    navSettings.addEventListener('click', () => {
+      showPage('settings');
+    });
+
+    // 저장 (json 파일로 내보내기)
+    document.getElementById('downloadProgressBtn').addEventListener('click', () => {
+      if(blocks.length === 0) {
+        alert('저장할 학습 데이터가 없습니다.');
+        return;
+      }
+      const data = {
+        originalSentences,
+        blocks,
+        selectedWordsState,
+        currentBlockIdx,
+        answerCorrectness
+      };
+      const jsonStr = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonStr], {type: 'application/json'});
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'word_scramble_progress.json';
+      a.click();
+
+      URL.revokeObjectURL(url);
+    });
+
+    // 불러오기
+    document.getElementById('loadProgressInput').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          if(!data.blocks || !data.originalSentences) throw new Error('잘못된 파일입니다.');
+
+          originalSentences = data.originalSentences;
+          blocks = data.blocks;
+          selectedWordsState = data.selectedWordsState;
+          answerCorrectness = data.answerCorrectness;
+          currentBlockIdx = data.currentBlockIdx || 0;
+
+          navTest.disabled = false;
+          showPage('test');
+          renderCurrentBlock();
+
+          alert('학습 데이터를 성공적으로 불러왔습니다.');
+        } catch(err) {
+          alert('파일을 불러오는 중 오류가 발생했습니다.');
+          console.error(err);
+        }
+      };
+      reader.readAsText(file);
+      // input 초기화 (같은 파일 다시 업로드 가능)
+      e.target.value = '';
+    });
+
+    // 초기 화면 세팅
+    showPage('home');
   </script>
 
 </body>
