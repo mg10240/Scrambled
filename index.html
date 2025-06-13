@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Word Scramble Review</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    .draggable {
+      padding: 6px 12px;
+      background-color: #e5e7eb;
+      border-radius: 0.5rem;
+      cursor: move;
+      margin: 2px;
+      display: inline-block;
+    }
+    .drop-zone {
+      min-height: 2rem;
+      border: 2px dashed #ccc;
+      border-radius: 0.5rem;
+      padding: 0.5rem;
+      display: flex;
+      flex-wrap: wrap;
+    }
+    .wrong {
+      background-color: #fecaca !important;
+    }
+    .hidden { display: none; }
+  </style>
+</head>
+<body class="bg-gray-100 p-4">
+  <div class="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow">
+    <nav class="mb-4 space-x-4">
+      <button onclick="showPage('home')" class="text-blue-600">Home</button>
+      <button onclick="showPage('test')" class="text-blue-600">Test</button>
+      <button onclick="showPage('result')" class="text-blue-600">Results</button>
+    </nav>
+
+    <!-- Home -->
+    <div id="home" class="page">
+      <h1 class="text-2xl font-bold mb-4">Word Scramble</h1>
+      <p class="mb-2">Upload a .txt or .csv file (each line = 1 sentence)</p>
+      <input type="file" id="fileInput" accept=".txt,.csv" class="mb-4" />
+    </div>
+
+    <!-- Test -->
+    <div id="test" class="page hidden">
+      <h2 class="text-xl font-semibold mb-2">Scramble Test</h2>
+      <div id="sentenceContainer" class="mb-4"></div>
+      <div class="drop-zone" id="dropZone"></div>
+      <div class="mt-4 space-x-2">
+        <button id="checkButton" class="bg-blue-600 text-white px-4 py-2 rounded">Check Answer</button>
+        <button onclick="saveProgress()" class="bg-green-600 text-white px-4 py-2 rounded">Save Progress</button>
+        <button onclick="loadProgress()" class="bg-yellow-500 text-white px-4 py-2 rounded">Load Progress</button>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="result" class="page hidden">
+      <h2 class="text-xl font-semibold mb-2">Retry Analysis</h2>
+      <canvas id="errorChart" width="400" height="200"></canvas>
+    </div>
+  </div>
+
+  <script>
+    let sentences = [];
+    let currentSentenceIndex = 0;
+    let retryCounts = [];
+    let chart;
+    let fileHash = '';
+
+    const fileInput = document.getElementById('fileInput');
+    const container = document.getElementById('sentenceContainer');
+    const dropZone = document.getElementById('dropZone');
+    const checkButton = document.getElementById('checkButton');
+    const chartCanvas = document.getElementById('errorChart');
+
+    fileInput.onchange = async (e) => {
+      const file = e.target.files[0];
+      const content = await file.text();
+      fileHash = await hashString(content);
+      const lines = content.split(/\r?\n/);
+      sentences = lines.filter(Boolean).map(l => l.replace(/\.$/, ''));
+      retryCounts = new Array(sentences.length).fill(0);
+      currentSentenceIndex = 0;
+      saveProgress();
+      loadProgress();
+      loadSentence();
+      showPage('test');
+    };
+
+    function loadSentence() {
+      dropZone.innerHTML = '';
+      container.innerHTML = '';
+      if (currentSentenceIndex >= sentences.length) {
+        container.innerHTML = '<strong>All done!</strong>';
+        return;
+      }
+      const sentence = sentences[currentSentenceIndex];
+      const words = sentence.split(' ');
+      const scrambled = [...words].sort(() => Math.random() - 0.5);
+
+      scrambled.forEach(word => {
+        const span = document.createElement('span');
+        span.textContent = word;
+        span.draggable = true;
+        span.className = 'draggable';
+        span.ondragstart = (e) => e.dataTransfer.setData('text', e.target.textContent);
+        dropZone.appendChild(span);
+      });
+    }
+
+    dropZone.ondragover = e => e.preventDefault();
+    dropZone.ondrop = e => {
+      e.preventDefault();
+      const word = e.dataTransfer.getData('text');
+      const el = Array.from(dropZone.children).find(child => child.textContent === word);
+      if (el) {
+        dropZone.removeChild(el);
+        dropZone.appendChild(el);
+      }
+    };
+
+    checkButton.onclick = () => {
+      const userWords = Array.from(dropZone.children).map(el => el.textContent);
+      const correctWords = sentences[currentSentenceIndex].split(' ');
+      let wrong = false;
+      dropZone.childNodes.forEach((el, i) => {
+        if (el.textContent !== correctWords[i]) {
+          el.classList.add('wrong');
+          wrong = true;
+        } else {
+          el.classList.remove('wrong');
+        }
+      });
+      if (wrong) {
+        retryCounts[currentSentenceIndex]++;
+        updateChart();
+      } else {
+        currentSentenceIndex++;
+        loadSentence();
+      }
+      saveProgress();
+    };
+
+    function updateChart() {
+      const data = {
+        labels: sentences.map((_, i) => `#${i + 1}`),
+        datasets: [{
+          label: 'Retry Count',
+          data: retryCounts,
+          backgroundColor: 'rgba(255, 99, 132, 0.5)',
+          borderColor: 'rgba(255, 99, 132, 1)',
+          borderWidth: 1
+        }]
+      };
+      if (chart) chart.destroy();
+      chart = new Chart(chartCanvas, {
+        type: 'bar',
+        data,
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true,
+              precision: 0
+            }
+          }
+        }
+      });
+    }
+
+    function saveProgress() {
+      if (!fileHash) return;
+      const data = {
+        sentences,
+        retryCounts,
+        currentSentenceIndex
+      };
+      localStorage.setItem('scramble_' + fileHash, JSON.stringify(data));
+    }
+
+    function loadProgress() {
+      if (!fileHash) return;
+      const raw = localStorage.getItem('scramble_' + fileHash);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      sentences = data.sentences || [];
+      retryCounts = data.retryCounts || [];
+      currentSentenceIndex = data.currentSentenceIndex || 0;
+      loadSentence();
+      updateChart();
+      showPage('test');
+    }
+
+    function showPage(page) {
+      document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+      document.getElementById(page).classList.remove('hidden');
+    }
+
+    async function hashString(str) {
+      const buffer = new TextEncoder().encode(str);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    window.onload = () => {
+      // No auto-load: must load file to get hash first
+    };
+  </script>
+</body>
+</html>
