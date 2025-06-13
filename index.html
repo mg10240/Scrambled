@@ -2,108 +2,535 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Word Scramble Trainer</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/framer-motion@10.16.3/dist/framer-motion.umd.js"></script>
-  <link href="https://cdn.jsdelivr.net/npm/@radix-ui/colors@latest/blackA.css" rel="stylesheet">
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: '#000',
-            accent: '#111',
-            background: '#fff',
-          },
-          borderRadius: {
-            xl: '1.5rem',
-          },
-          boxShadow: {
-            subtle: '0 4px 12px rgba(0,0,0,0.08)',
-            hover: '0 8px 20px rgba(0,0,0,0.15)'
-          },
-          transitionProperty: {
-            height: 'height',
-          }
-        },
-      },
-    }
-  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #fff;
-      color: #111;
+      font-family: 'Inter', sans-serif;
+      background: #f9fafb;
+      color: #111827;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 2rem 1rem;
     }
-    .fade-enter {
-      opacity: 0;
-      transform: translateY(10px);
+    .container {
+      max-width: 700px;
+      width: 100%;
+      background: white;
+      border-radius: 1rem;
+      box-shadow: 0 10px 30px rgb(0 0 0 / 0.07);
+      padding: 2.5rem 2rem 3rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
     }
-    .fade-enter-active {
-      opacity: 1;
-      transform: translateY(0);
+    nav button {
+      font-weight: 600;
+      padding: 0.5rem 1.25rem;
+      border-radius: 0.75rem;
+      border: 2px solid transparent;
+      background-color: transparent;
+      cursor: pointer;
+      color: #6b7280;
+      transition: all 0.25s ease;
+      user-select: none;
+    }
+    nav button:hover {
+      background-color: #e5e7eb;
+      color: #374151;
+    }
+    nav button.active {
+      color: #2563eb;
+      border-color: #2563eb;
+      background-color: #dbeafe;
+      cursor: default;
+    }
+    .page {
+      animation: fadeInUp 0.35s ease forwards;
+      display: none;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .page.active {
+      display: flex;
+    }
+    @keyframes fadeInUp {
+      from {opacity: 0; transform: translateY(10px);}
+      to {opacity: 1; transform: translateY(0);}
     }
     .word-option {
-      @apply px-3 py-1 m-1 bg-black text-white rounded cursor-pointer transition-all duration-200 shadow-sm hover:scale-105 hover:shadow-hover;
+      background-color: #2563eb;
+      color: white;
+      padding: 0.4rem 0.9rem;
+      border-radius: 0.75rem;
+      cursor: pointer;
+      font-weight: 600;
+      user-select: none;
+      box-shadow: 0 2px 6px rgb(37 99 235 / 0.3);
+      transition: background-color 0.3s ease;
+    }
+    .word-option:hover {
+      background-color: #1d4ed8;
+      box-shadow: 0 4px 10px rgb(29 78 216 / 0.45);
+    }
+    .word-option:disabled {
+      background-color: #9ca3af;
+      cursor: default;
+      box-shadow: none;
     }
     .word-line {
-      @apply flex flex-wrap gap-2 min-h-[3rem] p-3 border border-black rounded mb-4 transition-all duration-300;
+      min-height: 3rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 1rem;
+      padding: 0.5rem 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      background: #f3f4f6;
+      user-select: none;
+      cursor: default;
+      box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.05);
+    }
+    .word-line button {
+      background-color: #6b7280;
+      color: white;
+      padding: 0.4rem 0.75rem;
+      border-radius: 0.75rem;
+      font-weight: 600;
+      box-shadow: 0 1px 4px rgb(107 114 128 / 0.3);
+      transition: background-color 0.3s ease;
+      cursor: pointer;
+      user-select: none;
+    }
+    .word-line button:hover {
+      background-color: #4b5563;
+      box-shadow: 0 3px 7px rgb(75 85 99 / 0.5);
     }
     .wrong {
-      background-color: #f00 !important;
-      color: #fff !important;
-      @apply animate-pulse;
+      background-color: #ef4444 !important;
+      box-shadow: 0 0 8px #b91c1c !important;
     }
-    .btn {
-      @apply px-4 py-2 bg-black text-white rounded-xl shadow-subtle hover:bg-gray-900 hover:shadow-hover transition-all duration-300;
+    button.btn {
+      background-color: #2563eb;
+      color: white;
+      padding: 0.6rem 1.3rem;
+      border-radius: 1rem;
+      font-weight: 700;
+      box-shadow: 0 5px 12px rgb(37 99 235 / 0.4);
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.25s ease, box-shadow 0.3s ease;
+      user-select: none;
+      margin-top: 0.75rem;
+      align-self: flex-start;
     }
-    .file-input {
-      @apply px-4 py-2 border border-black rounded-xl bg-white shadow-subtle hover:shadow-hover transition-all duration-300;
+    button.btn:hover {
+      background-color: #1e40af;
+      box-shadow: 0 8px 20px rgb(30 64 175 / 0.6);
+    }
+    input[type="file"] {
+      cursor: pointer;
+      border-radius: 0.75rem;
+      padding: 0.3rem 0.6rem;
+      border: 1.5px solid #d1d5db;
+      transition: border-color 0.3s ease;
+    }
+    input[type="file"]:hover {
+      border-color: #2563eb;
+    }
+    .label-title {
+      font-weight: 700;
+      color: #374151;
+    }
+    canvas {
+      user-select: none;
+      max-height: 280px;
+      width: 100% !important;
+    }
+    .footer-note {
+      font-size: 0.85rem;
+      color: #6b7280;
+      margin-top: 2rem;
+      text-align: center;
     }
   </style>
 </head>
-<body class="p-6 bg-background text-primary">
-  <div class="max-w-3xl mx-auto shadow-subtle border border-black rounded-xl p-8 space-y-6 bg-white animate-fade-in">
-    <nav class="flex justify-center gap-4 mb-6">
-      <button onclick="showPage('home')" class="btn">홈</button>
-      <button onclick="showPage('test')" class="btn">테스트</button>
-      <button onclick="showPage('result')" class="btn">리뷰</button>
-      <button onclick="showPage('settings')" class="btn">설정</button>
+<body>
+  <div class="container" role="main" aria-label="Word Scramble Trainer Application">
+    <nav aria-label="Primary navigation" class="flex justify-center gap-4 mb-8" role="navigation">
+      <button id="nav-home" class="active" aria-current="page">홈</button>
+      <button id="nav-test">테스트</button>
+      <button id="nav-result">리뷰</button>
+      <button id="nav-settings">설정</button>
     </nav>
 
-    <div id="home" class="page transition-fade">
-      <h1 class="text-2xl font-bold mb-2">Word Scramble</h1>
-      <p class="mb-4">.txt 또는 .csv 파일 업로드 (빈 줄 → 문단 구분, 없으면 10문장씩)</p>
-      <input type="file" id="fileInput" accept=".txt,.csv" class="file-input"/>
-    </div>
+    <!-- Home -->
+    <section id="page-home" class="page active" tabindex="0" aria-label="홈 페이지">
+      <h1 class="text-3xl font-extrabold mb-4">Word Scramble</h1>
+      <p class="mb-4 text-gray-600">.txt 또는 .csv 파일을 업로드하세요. 빈 줄은 문단 구분으로 인식하며, 없으면 10문장 단위로 처리됩니다.</p>
+      <input type="file" id="fileInput" accept=".txt,.csv" aria-label="파일 업로드" />
+    </section>
 
-    <div id="test" class="page hidden transition-fade">
-      <h2 class="text-xl font-bold mb-2">문장 배열</h2>
-      <div id="sentenceLabel" class="mb-2"></div>
-      <div id="userLine" class="word-line"></div>
-      <div id="wordChoices" class="flex flex-wrap gap-2 mb-4"></div>
-      <button id="checkButton" class="btn">정답 확인</button>
-    </div>
+    <!-- Test -->
+    <section id="page-test" class="page" tabindex="0" aria-label="테스트 페이지">
+      <h2 class="text-2xl font-semibold mb-3">문장 배열</h2>
+      <p class="label-title mb-2" id="sentenceLabel" aria-live="polite" aria-atomic="true"></p>
+      <div id="userLine" class="word-line" aria-label="선택한 단어 줄" role="list"></div>
+      <div id="wordChoices" class="flex flex-wrap gap-2" aria-label="단어 선택 버튼 목록" role="list"></div>
+      <button id="checkButton" class="btn" aria-label="정답 확인">정답 확인</button>
+    </section>
 
-    <div id="result" class="page hidden transition-fade">
-      <h2 class="text-xl font-bold mb-2">재시도 분석</h2>
-      <canvas id="errorChart" class="w-full max-h-96"></canvas>
-    </div>
+    <!-- Result -->
+    <section id="page-result" class="page" tabindex="0" aria-label="리뷰 페이지">
+      <h2 class="text-2xl font-semibold mb-3">재시도 분석</h2>
+      <canvas id="errorChart" aria-label="오답 횟수 차트"></canvas>
+    </section>
 
-    <div id="settings" class="page hidden transition-fade">
-      <h2 class="text-xl font-bold mb-4">설정</h2>
-      <div class="space-y-2">
-        <button onclick="downloadProgress()" class="btn">학습 데이터 다운로드</button>
-        <input type="file" id="loadProgress" accept="application/json" class="file-input"/>
-      </div>
-    </div>
+    <!-- Settings -->
+    <section id="page-settings" class="page" tabindex="0" aria-label="설정 페이지">
+      <h2 class="text-2xl font-semibold mb-4">설정</h2>
+      <button id="downloadBtn" class="btn mb-3" aria-label="학습 데이터 다운로드">학습 데이터 다운로드</button>
+      <input type="file" id="loadProgress" accept="application/json" aria-label="학습 데이터 업로드" />
+    </section>
+
+    <p class="footer-note">© 2025 Word Scramble Trainer</p>
   </div>
 
-  <!-- script 태그는 그대로 유지 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    // 기존 자바스크립트 코드 동일 (생략)
+    'use strict';
+
+    // DOM Elements
+    const navButtons = {
+      home: document.getElementById('nav-home'),
+      test: document.getElementById('nav-test'),
+      result: document.getElementById('nav-result'),
+      settings: document.getElementById('nav-settings'),
+    };
+    const pages = {
+      home: document.getElementById('page-home'),
+      test: document.getElementById('page-test'),
+      result: document.getElementById('page-result'),
+      settings: document.getElementById('page-settings'),
+    };
+
+    const fileInput = document.getElementById('fileInput');
+    const wordChoices = document.getElementById('wordChoices');
+    const userLine = document.getElementById('userLine');
+    const checkBtn = document.getElementById('checkButton');
+    const sentenceLabel = document.getElementById('sentenceLabel');
+    const chartCanvas = document.getElementById('errorChart');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const loadProgress = document.getElementById('loadProgress');
+
+    // Data and state
+    let blocks = [], retryCounts = [], blockIndex = 0;
+    let reviewMode = false, reviewIndices = [], reviewPointer = 0;
+    let fileHash = '';
+    let chart = null;
+
+    // Navigation handler
+    Object.entries(navButtons).forEach(([key, btn]) => {
+      btn.addEventListener('click', () => showPage(key));
+    });
+
+    function showPage(pageKey) {
+      Object.entries(pages).forEach(([key, el]) => {
+        if (key === pageKey) {
+          el.classList.add('active');
+          navButtons[key].classList.add('active');
+          el.focus();
+        } else {
+          el.classList.remove('active');
+          navButtons[key].classList.remove('active');
+        }
+      });
+      if(pageKey === 'result') drawChart();
+    }
+
+    // Utility: simple SHA-1 hash for file content fingerprint
+    async function sha1(str) {
+      const buf = new TextEncoder().encode(str);
+      const hashBuffer = await crypto.subtle.digest('SHA-1', buf);
+      return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
+    }
+
+    // Parse uploaded file into blocks (paragraphs)
+    function parseFile(text) {
+      // 줄바꿈 2개 이상 = 문단 구분
+      let paras = text.split(/\r?\n\r?\n+/g).filter(p => p.trim());
+      // 각 문단을 문장(줄) 단위로 분할
+      let blocksLocal = paras.map(p => p.split(/\r?\n/).filter(l => l.trim()));
+      // 없으면 10문장씩 나누기
+      if (blocksLocal.length === 1 && blocksLocal[0].length > 10) {
+        const allLines = blocksLocal[0];
+        blocksLocal = [];
+        for(let i=0; i<allLines.length; i+=10) {
+          blocksLocal.push(allLines.slice(i, i+10));
+        }
+      }
+      return blocksLocal;
+    }
+
+    // Fisher-Yates shuffle
+    function shuffleArray(arr) {
+      let a = arr.slice();
+      for(let i = a.length -1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i+1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    // 파일 업로드 처리
+    fileInput.addEventListener('change', async (e) => {
+      if(e.target.files.length === 0) return;
+      const file = e.target.files[0];
+      const text = await file.text();
+      fileHash = await sha1(text);
+      blocks = parseFile(text);
+      retryCounts = new Array(blocks.length).fill(0);
+      blockIndex = 0;
+      reviewMode = false;
+      reviewIndices = [];
+      reviewPointer = 0;
+      sentenceLabel.textContent = '';
+      clearTestArea();
+      alert('파일이 정상적으로 로드되었습니다! 상단 "테스트" 탭으로 이동하세요.');
+      showPage('test');
+      loadBlock(blockIndex);
+    });
+
+    // 초기화
+    function clearTestArea() {
+      userLine.innerHTML = '';
+      wordChoices.innerHTML = '';
+      checkBtn.disabled = true;
+      sentenceLabel.textContent = '';
+    }
+
+    // 현재 문단 불러오기 (blockIndex 기준)
+    function loadBlock(idx) {
+      if (!blocks[idx]) return;
+      clearTestArea();
+      let sentences = blocks[idx];
+      // 문장 단어 분리 및 섞기
+      let words = sentences.map(s => s.trim().split(/\s+/)).flat();
+      let shuffled = shuffleArray(words);
+
+      // 렌더링
+      sentenceLabel.textContent = `문단 ${idx+1} (${sentences.length}문장)`;
+      shuffled.forEach((word, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'word-option';
+        btn.type = 'button';
+        btn.textContent = word;
+        btn.setAttribute('role','listitem');
+        btn.addEventListener('click', () => {
+          btn.disabled = true;
+          addUserWord(word);
+          checkBtn.disabled = false;
+        });
+        wordChoices.appendChild(btn);
+      });
+    }
+
+    // 사용자 선택 단어 추가
+    function addUserWord(word) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = word;
+      btn.setAttribute('role','listitem');
+      btn.addEventListener('click', () => {
+        userLine.removeChild(btn);
+        enableWordButton(word);
+        if(userLine.children.length === 0) checkBtn.disabled = true;
+      });
+      userLine.appendChild(btn);
+    }
+
+    // 단어 선택 버튼 다시 활성화
+    function enableWordButton(word) {
+      for(const btn of wordChoices.children) {
+        if(btn.textContent === word && btn.disabled) {
+          btn.disabled = false;
+          break;
+        }
+      }
+    }
+
+    // 정답 확인 버튼 이벤트
+    checkBtn.addEventListener('click', () => {
+      if(blockIndex >= blocks.length) return;
+      const userWords = Array.from(userLine.children).map(btn => btn.textContent);
+      const correctWords = blocks[blockIndex].map(s => s.trim().split(/\s+/)).flat();
+
+      // 단어 개수 불일치
+      if(userWords.length !== correctWords.length) {
+        alert(`단어 개수가 맞지 않습니다. (${userWords.length} / ${correctWords.length})`);
+        return;
+      }
+
+      // 오답 표시 및 처리
+      let wrongIndices = [];
+      userLine.childNodes.forEach((btn, idx) => {
+        btn.classList.remove('wrong');
+        if(userWords[idx] !== correctWords[idx]) {
+          btn.classList.add('wrong');
+          wrongIndices.push(idx);
+        }
+      });
+
+      if(wrongIndices.length === 0) {
+        alert('정답입니다! 다음 문단으로 이동합니다.');
+        retryCounts[blockIndex] = 0;
+        nextBlock();
+      } else {
+        alert(`${wrongIndices.length}개 단어가 틀렸습니다. 다시 시도하세요.`);
+        retryCounts[blockIndex]++;
+      }
+    });
+
+    function nextBlock() {
+      if(reviewMode) {
+        reviewPointer++;
+        if(reviewPointer >= reviewIndices.length) {
+          alert('모든 리뷰가 완료되었습니다!');
+          reviewMode = false;
+          blockIndex = 0;
+          loadBlock(blockIndex);
+          showPage('test');
+          return;
+        }
+        blockIndex = reviewIndices[reviewPointer];
+      } else {
+        blockIndex++;
+        if(blockIndex >= blocks.length) {
+          startReview();
+          return;
+        }
+      }
+      loadBlock(blockIndex);
+    }
+
+    // 리뷰 모드 시작 (오답 1회 이상 문단만)
+    function startReview() {
+      reviewIndices = retryCounts
+        .map((count, i) => (count > 0 ? i : -1))
+        .filter(i => i >= 0);
+      if(reviewIndices.length === 0) {
+        alert('모든 문단을 한 번에 맞추셨습니다! 축하합니다!');
+        blockIndex = 0;
+        loadBlock(blockIndex);
+        showPage('test');
+        return;
+      }
+      alert(`리뷰 모드 시작: ${reviewIndices.length}개의 문단을 다시 시도합니다.`);
+      reviewMode = true;
+      reviewPointer = 0;
+      blockIndex = reviewIndices[0];
+      loadBlock(blockIndex);
+      showPage('test');
+    }
+
+    // 차트 그리기
+    function drawChart() {
+      if(chart) chart.destroy();
+      const labels = blocks.map((_, i) => `문단 ${i+1}`);
+      const data = {
+        labels,
+        datasets: [{
+          label: '오답 횟수',
+          data: retryCounts,
+          backgroundColor: retryCounts.map(c => c > 0 ? 'rgba(239,68,68,0.6)' : 'rgba(107,114,128,0.3)'),
+          borderColor: retryCounts.map(c => c > 0 ? 'rgba(220,38,38,0.9)' : 'rgba(75,85,99,0.6)'),
+          borderWidth: 1,
+          borderRadius: 6,
+          barPercentage: 0.7,
+          categoryPercentage: 0.7,
+        }]
+      };
+      chart = new Chart(chartCanvas, {
+        type: 'bar',
+        data,
+        options: {
+          responsive: true,
+          animation: {duration: 700},
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {stepSize: 1},
+              title: {display:true, text: '오답 횟수'}
+            },
+            x: {
+              title: {display:true, text: '문단 번호'},
+              ticks: {maxRotation: 90, minRotation: 45}
+            }
+          },
+          plugins: {
+            legend: {display: false},
+            tooltip: {
+              callbacks: {
+                label: ctx => `오답 횟수: ${ctx.parsed.y}`
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // 학습 데이터 JSON 다운로드
+    downloadBtn.addEventListener('click', () => {
+      if(blocks.length === 0) {
+        alert('먼저 파일을 업로드하고 테스트를 진행하세요.');
+        return;
+      }
+      const data = {
+        fileHash,
+        retryCounts,
+        blocksLength: blocks.length,
+        timestamp: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `word_scramble_data_${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    // 학습 데이터 JSON 업로드 (로드)
+    loadProgress.addEventListener('change', async (e) => {
+      if(e.target.files.length === 0) return;
+      const file = e.target.files[0];
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        if(!data.fileHash || !Array.isArray(data.retryCounts)) {
+          alert('유효하지 않은 학습 데이터입니다.');
+          return;
+        }
+        if(data.blocksLength !== blocks.length || data.fileHash !== fileHash) {
+          alert('학습 데이터가 현재 업로드된 파일과 일치하지 않습니다.');
+          return;
+        }
+        retryCounts = data.retryCounts;
+        alert('학습 데이터를 성공적으로 불러왔습니다.');
+        if(chart) drawChart();
+      } catch(e) {
+        alert('학습 데이터 로드 중 오류가 발생했습니다.');
+      }
+    });
+
+    // 초기 상태: 홈 페이지 표시
+    showPage('home');
   </script>
 </body>
 </html>
