@@ -1,533 +1,797 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Word Scramble Trainer</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #f9fafb;
-      color: #1e40af; /* 진한 파란색 */
-      margin: 0; padding: 20px;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    h1 {
-      font-weight: 700;
-      margin-bottom: 1rem;
-      color: #1e40af;
-    }
-    .pill {
-      display: inline-block;
-      background-color: #bfdbfe; /* 밝은 하늘색 */
-      color: #1e40af; /* 진한 파란색 */
-      padding: 6px 12px;
-      border-radius: 9999px;
-      margin: 3px;
-      cursor: pointer;
-      user-select: none;
-      transition: background-color 0.25s, color 0.25s;
-      box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
-      font-weight: 600;
-      font-size: 0.9rem;
-    }
-    .pill:hover {
-      background-color: #93c5fd;
-    }
-    .pill.selected {
-      background-color: #1e40af;
-      color: #bfdbfe;
-      box-shadow: 0 0 8px #3b82f6;
-    }
-    .sentence-block {
-      margin-bottom: 1.5rem;
-      border: 1px solid #93c5fd;
-      border-radius: 0.75rem;
-      background: white;
-      padding: 1rem 1.25rem;
-      width: 100%;
-      max-width: 700px;
-      box-shadow: 0 2px 10px rgb(59 130 246 / 0.2);
-    }
-    .sentence-label {
-      font-weight: 600;
-      margin-bottom: 0.4rem;
-      color: #2563eb;
-    }
-    .word-choices, .user-line {
-      min-height: 2.8rem;
-      padding: 4px 0;
-      border: 1px solid #cbd5e1;
-      border-radius: 0.5rem;
-      background: #f1f5f9;
-      margin-bottom: 0.75rem;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 6px;
-    }
-    .user-line {
-      background: #dbeafe;
-      border-color: #3b82f6;
-      min-height: 3rem;
-    }
-    .word-choices .pill {
-      box-shadow: none;
-    }
-    .user-line .pill {
-      box-shadow: 0 0 6px #3b82f6;
-    }
-    .wrong {
-      border-color: #dc2626 !important;
-      background-color: #fee2e2 !important;
-      color: #b91c1c !important;
-      box-shadow: none !important;
-    }
-    .btn {
-      background-color: #1e40af;
-      color: white;
-      padding: 0.6rem 1.2rem;
-      border-radius: 0.5rem;
-      font-weight: 600;
-      cursor: pointer;
-      border: none;
-      transition: background-color 0.3s;
-      user-select: none;
-      margin-right: 0.5rem;
-    }
-    .btn:hover {
-      background-color: #2563eb;
-    }
-    .btn:disabled {
-      background-color: #a5b4fc;
-      cursor: not-allowed;
-    }
-    .nav {
-      margin-bottom: 2rem;
-    }
-    .nav button {
-      margin-right: 1rem;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Word Scramble</title>
+<style>
+  /* 전체 배경과 기본 텍스트 색 */
+  body {
+    margin: 0; padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f0f7fb; /* 아주 연한 하늘색 */
+    color: #123a6f; /* 진한 파랑(텍스트) - 눈 아프지 않게 중간톤 */
+  }
+  header {
+    background: #a7d8f5; /* 부드러운 하늘색 */
+    padding: 1rem 2rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #034078;
+    box-shadow: 0 2px 6px rgba(3,64,120,0.3);
+    user-select: none;
+  }
+  nav {
+    background: #d5e9fb;
+    display: flex;
+    gap: 1rem;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #9fc9f3;
+  }
+  nav button {
+    background: transparent;
+    border: none;
+    color: #034078;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background-color 0.3s ease;
+  }
+  nav button:hover:not(:disabled) {
+    background: #9fc9f3;
+  }
+  nav button:disabled {
+    color: #7ea4cb;
+    cursor: default;
+  }
+  main {
+    max-width: 960px;
+    margin: 1rem auto;
+    padding: 1rem 2rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(3,64,120,0.15);
+  }
+  #notification {
+    background: #c7e0fb;
+    border-left: 4px solid #3b8ed3;
+    padding: 0.8rem 1.2rem;
+    margin-bottom: 1rem;
+    border-radius: 6px;
+    color: #034078;
+    font-weight: 600;
+    display: none;
+  }
+  .page {
+    display: none;
+  }
+  .page.active {
+    display: block;
+  }
+  input[type="file"] {
+    margin-top: 0.8rem;
+  }
+  /* 테스트 페이지 스타일 */
+  .sentence-block {
+    margin-bottom: 1.5rem;
+    padding: 0.7rem 1rem;
+    background: #e3f2fc;
+    border-radius: 10px;
+    box-shadow: inset 0 0 10px #b4d6f7;
+  }
+  .sentence-label {
+    font-weight: 700;
+    margin-bottom: 0.6rem;
+    color: #034078;
+  }
+  .word-choices, .user-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    min-height: 36px;
+    padding: 0.2rem 0.4rem;
+  }
+  .word-choices {
+    background: #d8eafd;
+    border-radius: 10px;
+    box-shadow: inset 0 0 6px #aad1ff;
+  }
+  .user-line {
+    background: #b6d7f9;
+    border-radius: 10px;
+    margin-bottom: 0.6rem;
+    box-shadow: inset 0 0 6px #7db9ff;
+  }
+  .pill {
+    background: #9fd7ff;
+    color: #034078;
+    padding: 6px 12px;
+    border-radius: 30px;
+    font-weight: 600;
+    user-select: none;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(3,64,120,0.25);
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+  .pill:hover {
+    background: #7db9ff;
+  }
+  .pill.selected {
+    background: #034078;
+    color: #d0e6ff;
+    box-shadow: 0 4px 8px rgba(3,64,120,0.7);
+  }
+  .user-line .pill.selected {
+    background: #034078;
+    color: #d0e6ff;
+    cursor: pointer;
+  }
+  .wrong {
+    border: 2px solid #ee5757;
+    box-shadow: 0 0 10px #ee5757aa;
+  }
+  .result-message {
+    font-weight: 600;
+    margin-top: 4px;
+    font-size: 0.95rem;
+  }
+  .result-correct {
+    color: #2a8a2a;
+  }
+  .result-wrong {
+    color: #d93025;
+  }
+
+  /* 버튼들 */
+  .btn-group {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.8rem;
+  }
+  button.action-btn {
+    background: #3b8ed3;
+    border: none;
+    color: white;
+    font-weight: 700;
+    padding: 0.7rem 1.4rem;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px #2a6ab7aa;
+    transition: background-color 0.3s ease;
+  }
+  button.action-btn:hover:not(:disabled) {
+    background: #2a6ab7a9;
+  }
+  button.action-btn:disabled {
+    background: #a6c7f7;
+    cursor: default;
+    box-shadow: none;
+  }
+  /* 리뷰 그래프 컨테이너 */
+  #reviewGraphContainer {
+    margin-top: 2rem;
+    padding: 1rem;
+    background: #d8eafd;
+    border-radius: 10px;
+    box-shadow: inset 0 0 10px #aad1ff;
+  }
+  #reviewGraphContainer h3 {
+    margin: 0 0 0.8rem 0;
+    font-weight: 700;
+    color: #034078;
+  }
+  #reviewGraph {
+    width: 100%;
+    height: 150px;
+  }
+</style>
 </head>
 <body>
+<header>Word Scramble</header>
+<nav>
+  <button id="navHome">홈</button>
+  <button id="navTest" disabled>학습</button>
+  <button id="navSettings">설정</button>
+</nav>
+<main>
+  <div id="notification"></div>
 
-  <h1>Word Scramble Trainer</h1>
-
-  <div class="nav">
-    <button class="btn" id="navHome">홈</button>
-    <button class="btn" id="navTest" disabled>테스트</button>
-    <button class="btn" id="navReview" disabled>리뷰 (미구현)</button>
-    <button class="btn" id="navSettings">설정</button>
-  </div>
-
-  <div id="pageHome" class="page">
-    <p class="mb-4 max-w-xl text-center">
-      .txt 또는 .csv 파일을 업로드하세요.<br>
-      빈 줄은 문단 구분, 없으면 10문장 단위로 처리됩니다.<br>
-      (현재 테스트는 3문장 단위씩 묶어 진행합니다.)
-    </p>
+  <section id="homePage" class="page active">
+    <p>텍스트 파일(.txt 또는 .csv)을 업로드하세요. 빈 줄은 문단 구분, 없으면 3문장 단위로 처리됩니다.</p>
     <input type="file" id="fileInput" accept=".txt,.csv" />
-  </div>
+  </section>
 
-  <div id="pageTest" class="page" style="display:none; width: 100%; max-width: 720px;">
+  <section id="testPage" class="page">
     <div id="blocksContainer"></div>
-
-    <div style="margin-top:1rem; display:flex; justify-content:center; align-items:center;">
-      <button id="prevBlockBtn" class="btn" disabled>이전</button>
-      <button id="checkAnswersBtn" class="btn" style="margin: 0 1rem;">정답 확인</button>
-      <button id="nextBlockBtn" class="btn" disabled>다음</button>
+    <div class="btn-group">
+      <button id="prevBlockBtn" class="action-btn">이전</button>
+      <button id="nextBlockBtn" class="action-btn">다음</button>
+      <button id="checkAnswersBtn" class="action-btn">정답 확인</button>
+      <button id="downloadProgressBtn" class="action-btn">저장</button>
+      <label for="loadProgressInput" class="action-btn" style="cursor:pointer;">불러오기</label>
+      <input type="file" id="loadProgressInput" accept=".json" style="display:none;" />
     </div>
-  </div>
+    <div id="reviewGraphContainer">
+      <h3>리뷰 그래프 (블록별 정답률)</h3>
+      <canvas id="reviewGraph"></canvas>
+    </div>
+  </section>
 
-  <div id="pageSettings" class="page" style="display:none; max-width: 720px;">
-    <h2 class="text-xl font-bold mb-2">학습 데이터 관리</h2>
-    <button class="btn" id="downloadProgressBtn">학습 데이터 다운로드</button>
-    <input type="file" id="loadProgressInput" accept="application/json" style="margin-top: 1rem;" />
-  </div>
+  <section id="settingsPage" class="page">
+    <p>설정 페이지 (추후 확장 가능)</p>
+  </section>
+</main>
 
-  <script>
-    // 상태 변수
-    let blocks = []; // SentenceBlock: [[sentence1Words], [sentence2Words], [sentence3Words]]
-    let originalSentences = []; // 원본 문장(문장 단위 텍스트)
-    let currentBlockIdx = 0;
+<script>
+  // DOM elements
+  const navHome = document.getElementById('navHome');
+  const navTest = document.getElementById('navTest');
+  const navSettings = document.getElementById('navSettings');
+  const notification = document.getElementById('notification');
 
-    // 선택 단어 상태: blocks index -> sentence index -> selected words array
-    let selectedWordsState = [];
+  const homePage = document.getElementById('homePage');
+  const testPage = document.getElementById('testPage');
+  const settingsPage = document.getElementById('settingsPage');
 
-    // 정답 여부 저장 (blocks index -> sentence index -> boolean)
-    let answerCorrectness = [];
+  const fileInput = document.getElementById('fileInput');
+  const blocksContainer = document.getElementById('blocksContainer');
+  const prevBlockBtn = document.getElementById('prevBlockBtn');
+  const nextBlockBtn = document.getElementById('nextBlockBtn');
+  const checkAnswersBtn = document.getElementById('checkAnswersBtn');
+  const downloadProgressBtn = document.getElementById('downloadProgressBtn');
+  const loadProgressInput = document.getElementById('loadProgressInput');
 
-    // DOM 참조
-    const fileInput = document.getElementById('fileInput');
-    const blocksContainer = document.getElementById('blocksContainer');
-    const prevBlockBtn = document.getElementById('prevBlockBtn');
-    const nextBlockBtn = document.getElementById('nextBlockBtn');
-    const checkAnswersBtn = document.getElementById('checkAnswersBtn');
+  const reviewGraphCanvas = document.getElementById('reviewGraph');
+  const reviewGraphCtx = reviewGraphCanvas.getContext('2d');
 
-    // 네비게이션 버튼
-    const navHome = document.getElementById('navHome');
-    const navTest = document.getElementById('navTest');
-    const navSettings = document.getElementById('navSettings');
+  // 상태 변수
+  let originalSentences = [];
+  let blocks = [];
+  let selectedWordsState = []; // [blockIdx][sentenceIdx] = [selectedWords...]
+  let answerCorrectness = [];  // [blockIdx][sentenceIdx] = true/false/null
+  let currentBlockIdx = 0;
 
-    // 페이지들
-    const pageHome = document.getElementById('pageHome');
-    const pageTest = document.getElementById('pageTest');
-    const pageSettings = document.getElementById('pageSettings');
+  // 페이지 전환 함수
+  function showPage(pageName) {
+    [homePage, testPage, settingsPage].forEach(p => p.classList.remove('active'));
+    if(pageName === 'home') homePage.classList.add('active');
+    else if(pageName === 'test') testPage.classList.add('active');
+    else if(pageName === 'settings') settingsPage.classList.add('active');
+    clearNotification();
+  }
 
-    // 네비게이션 함수
-    function showPage(page) {
-      [pageHome, pageTest, pageSettings].forEach(p => p.style.display = 'none');
-      if(page === 'home') pageHome.style.display = 'block';
-      else if(page === 'test') pageTest.style.display = 'block';
-      else if(page === 'settings') pageSettings.style.display = 'block';
+  // 알림 표시 함수 (3초 후 자동 사라짐)
+  let notifTimeout = null;
+  function showNotification(msg, isError=false) {
+    clearTimeout(notifTimeout);
+    notification.style.display = 'block';
+    notification.style.color = isError ? '#b02a2a' : '#034078';
+    notification.style.backgroundColor = isError ? '#f9d6d6' : '#c7e0fb';
+    notification.textContent = msg;
+    notifTimeout = setTimeout(() => {
+      notification.style.display = 'none';
+    }, 4000);
+  }
+  function clearNotification() {
+    notification.style.display = 'none';
+  }
 
-      // 버튼 활성/비활성 처리
-      navTest.disabled = blocks.length === 0;
-      prevBlockBtn.disabled = currentBlockIdx === 0;
-      nextBlockBtn.disabled = currentBlockIdx === blocks.length - 1 || blocks.length === 0;
-    }
+  // 텍스트 파싱 함수: 빈 줄로 문단 나누기, 없으면 3문장씩 나누기
+  function parseTextToSentences(text) {
+    // 윈도우 스타일 줄바꿈 통일
+    text = text.replace(/\r\n/g, '\n').trim();
+    if(!text) return [];
 
-    // 문장 분리 함수 (마침표, 느낌표, 물음표 기준)
-    function splitToSentences(text) {
-      // 문장 구분 문자 포함해서 분리, 빈 문장 제거
-      const raw = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-      // .!? 중복 마침표 제거 후 split
-      const regex = /([.!?])\s+|\n+/g;
-      let sentences = [];
-      let start = 0;
-      let match;
-      while ((match = regex.exec(raw)) !== null) {
-        const end = match.index + 1;
-        let s = raw.substring(start, end).trim();
-        if(s.length > 0) sentences.push(s);
-        start = regex.lastIndex;
-      }
-      // 마지막 문장 처리
-      if(start < raw.length) {
-        let lastS = raw.substring(start).trim();
-        if(lastS.length > 0) sentences.push(lastS);
-      }
-      return sentences;
-    }
+    // 빈 줄로 나누기
+    const paragraphs = text.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+    let sentences = [];
 
-    // 문장 3개씩 묶기
-    function groupSentences(sentences) {
-      const groups = [];
-      for(let i=0; i<sentences.length; i+=3) {
-        groups.push(sentences.slice(i, i+3));
-      }
-      return groups;
-    }
-
-    // 문장 -> 단어 배열 (공백 기준, 쉼표 등 제거)
-    function sentenceToWords(sentence) {
-      // 쉼표, 쌍따옴표, 작은따옴표 제거, 앞뒤 공백 제거
-      const cleaned = sentence.replace(/[,"'“”‘’]/g, '').trim();
-      // 공백 기준 분리
-      const words = cleaned.split(/\s+/);
-      return words.filter(w => w.length > 0);
-    }
-
-    // 배열 무작위 섞기(Fisher-Yates)
-    function shuffleArray(arr) {
-      let a = arr.slice();
-      for(let i = a.length -1; i>0; i--) {
-        const j = Math.floor(Math.random() * (i+1));
-        [a[i], a[j]] = [a[j], a[i]];
-      }
-      return a;
-    }
-
-    // 선택 단어 상태 초기화
-    function initSelectedWordsState() {
-      selectedWordsState = [];
-      answerCorrectness = [];
-      for(let b=0; b<blocks.length; b++) {
-        selectedWordsState[b] = [];
-        answerCorrectness[b] = [];
-        for(let s=0; s<blocks[b].length; s++) {
-          selectedWordsState[b][s] = [];
-          answerCorrectness[b][s] = null;
+    if(paragraphs.length > 1) {
+      // 빈 줄 구분 문단 처리: 문단마다 문장 분리(마침표, 물음표, 느낌표)
+      paragraphs.forEach(para => {
+        // 문장 분리(마침표, 물음표, 느낌표, '…' 포함)
+        const sents = para.match(/[^\.!?…\n]+[\.!?…]?/g);
+        if(sents) {
+          sents.forEach(s => sentences.push(s.trim()));
         }
+      });
+    } else {
+      // 빈 줄 없으면 3문장 단위 블록 나누기
+      const sents = text.match(/[^\.!?…\n]+[\.!?…]?/g);
+      if(sents) {
+        sentences = sents.map(s => s.trim());
       }
     }
+    return sentences;
+  }
 
-    // 테스트 페이지 렌더링 (현재 블록)
-    function renderCurrentBlock() {
-      blocksContainer.innerHTML = '';
-      if(blocks.length === 0) return;
+  // 3문장 단위로 블록 생성
+  function makeBlocks(sentences) {
+    let blocks = [];
+    for(let i=0; i<sentences.length; i += 3) {
+      blocks.push(sentences.slice(i, i+3));
+    }
+    return blocks;
+  }
 
-      const block = blocks[currentBlockIdx];
-      const fragment = document.createDocumentFragment();
+  // 단어 분리 함수 (띄어쓰기 기준)
+  function splitSentenceToWords(sentence) {
+    return sentence.split(/\s+/).filter(Boolean);
+  }
 
-      block.forEach((sentenceWords, sIdx) => {
-        const sentenceDiv = document.createElement('div');
-        sentenceDiv.className = 'sentence-block';
+  // 단어 pill 생성
+  function createWordPill(word, selected=false) {
+    const pill = document.createElement('span');
+    pill.className = 'pill';
+    if(selected) pill.classList.add('selected');
+    pill.textContent = word;
+    return pill;
+  }
 
-        // 문장 라벨
-        const label = document.createElement('div');
-        label.className = 'sentence-label';
-        label.textContent = `문장 ${currentBlockIdx*3 + sIdx + 1}`;
-        sentenceDiv.appendChild(label);
+  // 테스트 페이지 렌더링
+  function renderTestBlock(blockIdx) {
+    blocksContainer.innerHTML = '';
+    if(blockIdx < 0 || blockIdx >= blocks.length) return;
 
-        // 선택된 단어 줄 (user-line)
-        const userLine = document.createElement('div');
-        userLine.className = 'user-line';
-        userLine.dataset.sentenceIdx = String(sIdx);
-        sentenceDiv.appendChild(userLine);
+    const block = blocks[blockIdx];
 
-        // 단어 선택 영역 (shuffled word pills)
-        const choices = document.createElement('div');
-        choices.className = 'word-choices';
-        sentenceDiv.appendChild(choices);
+    for(let i=0; i<block.length; i++) {
+      const sentenceText = block[i];
+      const container = document.createElement('div');
+      container.className = 'sentence-block';
 
-        // 무작위 섞인 단어들
-        const shuffled = shuffleArray(sentenceWords);
-        shuffled.forEach(word => {
-          const pill = document.createElement('span');
-          pill.className = 'pill';
-          pill.textContent = word;
-          pill.dataset.word = word;
-          pill.dataset.sentenceIdx = String(sIdx);
+      const label = document.createElement('div');
+      label.className = 'sentence-label';
+      label.textContent = `문장 ${i+1}`;
+      container.appendChild(label);
 
-          pill.addEventListener('click', () => {
-            const s = parseInt(pill.dataset.sentenceIdx);
-            const wordText = pill.dataset.word;
+      // 사용자가 배열한 단어 영역
+      const userLine = document.createElement('div');
+      userLine.className = 'user-line';
+      container.appendChild(userLine);
 
-            // 현재 선택 단어 배열 참조
-            const selected = selectedWordsState[currentBlockIdx][s];
-            const idx = selected.indexOf(wordText);
+      // 선택 해제된 단어 모음 (선택 가능한 단어 pill)
+      const wordChoices = document.createElement('div');
+      wordChoices.className = 'word-choices';
+      container.appendChild(wordChoices);
 
-            if(idx === -1) {
-              // 선택되지 않은 단어면 선택영역에 추가
-              selected.push(wordText);
-              pill.classList.add('selected');
-              updateUserLine(s);
-            } else {
-              // 이미 선택된 단어면 해제
-              selected.splice(idx, 1);
-              pill.classList.remove('selected');
-              updateUserLine(s);
-            }
-          });
+      // 원래 문장 단어들
+      const words = splitSentenceToWords(sentenceText);
 
-          choices.appendChild(pill);
+      // 상태 초기화: 선택된 단어 없으면 빈 배열 할당
+      if(!selectedWordsState[blockIdx]) selectedWordsState[blockIdx] = [];
+      if(!selectedWordsState[blockIdx][i]) selectedWordsState[blockIdx][i] = [];
+
+      // 선택된 단어를 먼저 userLine에 표시
+      selectedWordsState[blockIdx][i].forEach((w, idx) => {
+        const pill = createWordPill(w, true);
+        // 클릭하면 선택 해제 (빼기)
+        pill.addEventListener('click', () => {
+          selectedWordsState[blockIdx][i].splice(idx, 1);
+          renderTestBlock(blockIdx);
         });
+        userLine.appendChild(pill);
+      });
 
-        // 정답 틀렸을 때 스타일링
-        if(answerCorrectness[currentBlockIdx][sIdx] === false) {
-          userLine.classList.add('wrong');
-        } else {
+      // 남은 단어: words에서 selectedWordsState를 제외한 단어들 (중복 처리 주의)
+      // 방법: 원문 배열에서 selectedWordsState를 빼고 나머지를 wordChoices에 출력
+
+      // 원문 단어별 개수 세기
+      const wordCount = {};
+      words.forEach(w => wordCount[w] = (wordCount[w]||0) + 1);
+      // 선택된 단어 빼기
+      selectedWordsState[blockIdx][i].forEach(w => {
+        if(wordCount[w]) wordCount[w]--;
+      });
+      // 남은 단어 배열 생성
+      const remainingWords = [];
+      Object.entries(wordCount).forEach(([w, c]) => {
+        for(let n=0; n<c; n++) remainingWords.push(w);
+      });
+
+      // 랜덤 섞기 (Fisher-Yates)
+      for(let j=remainingWords.length-1; j>0; j--) {
+        const k = Math.floor(Math.random() * (j+1));
+        [remainingWords[j], remainingWords[k]] = [remainingWords[k], remainingWords[j]];
+      }
+
+      // wordChoices에 추가, 클릭시 selectedWordsState에 추가 후 다시 렌더링
+      remainingWords.forEach(w => {
+        const pill = createWordPill(w, false);
+        pill.addEventListener('click', () => {
+          selectedWordsState[blockIdx][i].push(w);
+          renderTestBlock(blockIdx);
+        });
+        wordChoices.appendChild(pill);
+      });
+
+      // 정답 메시지 영역
+      const resultMessage = document.createElement('div');
+      resultMessage.className = 'result-message';
+      container.appendChild(resultMessage);
+
+      // 정답 확인 후 결과 표시
+      if(answerCorrectness[blockIdx] && answerCorrectness[blockIdx][i] !== null) {
+        if(answerCorrectness[blockIdx][i]) {
+          resultMessage.textContent = '정답입니다! ✓';
+          resultMessage.classList.add('result-correct');
+          resultMessage.classList.remove('result-wrong');
           userLine.classList.remove('wrong');
+        } else {
+          resultMessage.textContent = '틀렸습니다 ✗';
+          resultMessage.classList.add('result-wrong');
+          resultMessage.classList.remove('result-correct');
+          userLine.classList.add('wrong');
         }
-
-        fragment.appendChild(sentenceDiv);
-
-        // userLine 업데이트 함수
-        function updateUserLine(sentenceIdx) {
-          if(sentenceIdx !== sIdx) return;
-          const line = userLine;
-          line.innerHTML = '';
-          selectedWordsState[currentBlockIdx][sentenceIdx].forEach(w => {
-            const selPill = document.createElement('span');
-            selPill.className = 'pill selected';
-            selPill.textContent = w;
-            selPill.dataset.word = w;
-            selPill.dataset.sentenceIdx = String(sentenceIdx);
-
-            // 클릭하면 선택 해제
-            selPill.addEventListener('click', () => {
-              const s = parseInt(selPill.dataset.sentenceIdx);
-              const wordText = selPill.dataset.word;
-              const selected = selectedWordsState[currentBlockIdx][s];
-              const idx = selected.indexOf(wordText);
-              if(idx !== -1) {
-                selected.splice(idx, 1);
-                selPill.classList.remove('selected');
-                // word pill도 해제 표시
-                // 모든 word pills 중에서 같은 단어, 같은 sentenceIdx인 것 찾아서 제거
-                [...choices.children].forEach(pill => {
-                  if(pill.dataset.word === wordText && pill.dataset.sentenceIdx === String(s)) {
-                    pill.classList.remove('selected');
-                  }
-                });
-                updateUserLine(s);
-              }
-            });
-            line.appendChild(selPill);
-          });
-        }
-
-        // 초기 userLine 렌더링
-        updateUserLine(sIdx);
-      });
-
-      blocksContainer.appendChild(fragment);
-
-      // 버튼 상태 업데이트
-      prevBlockBtn.disabled = currentBlockIdx === 0;
-      nextBlockBtn.disabled = currentBlockIdx === blocks.length - 1;
-    }
-
-    // 정답 확인 함수
-    function checkAnswers() {
-      const block = blocks[currentBlockIdx];
-      let allCorrect = true;
-
-      block.forEach((sentenceWords, sIdx) => {
-        // 정답 단어 배열 (원본 순서)
-        const answer = sentenceWords;
-        const userSelected = selectedWordsState[currentBlockIdx][sIdx];
-
-        // 길이 및 단어 순서 체크
-        const correct = 
-          userSelected.length === answer.length &&
-          userSelected.every((w, i) => w === answer[i]);
-
-        answerCorrectness[currentBlockIdx][sIdx] = correct;
-
-        if(!correct) allCorrect = false;
-      });
-
-      renderCurrentBlock();
-
-      if(allCorrect) {
-        alert('모든 문장이 정확히 맞았습니다! 다음 블록으로 이동하세요.');
       } else {
-        alert('틀린 문장이 있습니다. 빨간색으로 표시된 문장을 다시 확인하세요.');
+        resultMessage.textContent = '';
+        userLine.classList.remove('wrong');
       }
+
+      blocksContainer.appendChild(container);
     }
 
-    // 파일 업로드 후 처리
-    fileInput.addEventListener('change', e => {
-      const file = e.target.files[0];
-      if(!file) return;
+    // 버튼 활성/비활성 처리
+    prevBlockBtn.disabled = (blockIdx === 0);
+    nextBlockBtn.disabled = (blockIdx === blocks.length - 1);
+  }
 
-      const reader = new FileReader();
-      reader.onload = () => {
-        const content = reader.result;
-        if(typeof content !== 'string') return;
+  // 정답 확인 함수
+  function checkAnswers() {
+    if(!answerCorrectness[currentBlockIdx]) {
+      answerCorrectness[currentBlockIdx] = [];
+    }
+    const block = blocks[currentBlockIdx];
 
-        // 문장 분리
-        const sentences = splitToSentences(content);
-        originalSentences = sentences;
-
-        // 3문장씩 묶기
-        const grouped = groupSentences(sentences);
-
-        // 각 문장을 단어 배열로 변환
-        blocks = grouped.map(sentencesInGroup => {
-          return sentencesInGroup.map(sentenceToWords);
-        });
-
-        currentBlockIdx = 0;
-        initSelectedWordsState();
-        answerCorrectness = answerCorrectness.map(
-          block => block.map(() => null)
-        );
-
-        alert(`총 ${sentences.length}문장, ${blocks.length}개 블록으로 분할 완료`);
-
-        navTest.disabled = false;
-        showPage('test');
-        renderCurrentBlock();
-      };
-      reader.readAsText(file);
-    });
-
-    prevBlockBtn.addEventListener('click', () => {
-      if(currentBlockIdx > 0) {
-        currentBlockIdx--;
-        renderCurrentBlock();
+    let correctCount = 0;
+    for(let i=0; i<block.length; i++) {
+      const origWords = splitSentenceToWords(block[i]);
+      const userWords = selectedWordsState[currentBlockIdx][i] || [];
+      // 단어 배열이 정확히 같아야 정답
+      let correct = (origWords.length === userWords.length);
+      if(correct) {
+        for(let j=0; j<origWords.length; j++) {
+          if(origWords[j] !== userWords[j]) {
+            correct = false;
+            break;
+          }
+        }
       }
-    });
-    nextBlockBtn.addEventListener('click', () => {
-      if(currentBlockIdx < blocks.length -1) {
-        currentBlockIdx++;
-        renderCurrentBlock();
-      }
-    });
-    checkAnswersBtn.addEventListener('click', () => {
-      checkAnswers();
-    });
+      answerCorrectness[currentBlockIdx][i] = correct;
+      if(correct) correctCount++;
+    }
+    renderTestBlock(currentBlockIdx);
+    updateReviewGraph();
+    if(correctCount === block.length) {
+      showNotification('모든 문장을 정확히 맞췄습니다! 🎉');
+    } else {
+      showNotification(`정답: ${correctCount} / ${block.length}`);
+    }
+  }
 
-    // 네비게이션 버튼
-    navHome.addEventListener('click', () => showPage('home'));
-    navTest.addEventListener('click', () => {
-      if(blocks.length === 0) {
-        alert('먼저 파일을 업로드하세요.');
-        return;
-      }
-      showPage('test');
-    });
-    navSettings.addEventListener('click', () => {
-      showPage('settings');
-    });
+  // 저장 데이터 만들기 (JSON)
+  function getSaveData() {
+    return {
+      originalSentences,
+      blocks,
+      selectedWordsState,
+      answerCorrectness,
+      currentBlockIdx
+    };
+  }
+  // 저장 파일 다운로드
+  function downloadSaveData() {
+    if(blocks.length === 0) {
+      showNotification('저장할 데이터가 없습니다.', true);
+      return;
+    }
+    const dataStr = JSON.stringify(getSaveData());
+    const blob = new Blob([dataStr], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'word_scramble_progress.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showNotification('학습 진행 상황이 저장되었습니다.');
+  }
 
-    // 저장 (json 파일로 내보내기)
-    document.getElementById('downloadProgressBtn').addEventListener('click', () => {
-      if(blocks.length === 0) {
-        alert('저장할 학습 데이터가 없습니다.');
-        return;
-      }
-      const data = {
-        originalSentences,
-        blocks,
-        selectedWordsState,
-        currentBlockIdx,
-        answerCorrectness
-      };
-      const jsonStr = JSON.stringify(data, null, 2);
-      const blob = new Blob([jsonStr], {type: 'application/json'});
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'word_scramble_progress.json';
-      a.click();
-
-      URL.revokeObjectURL(url);
-    });
-
-    // 불러오기
-    document.getElementById('loadProgressInput').addEventListener('change', e => {
-      const file = e.target.files[0];
-      if(!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const data = JSON.parse(reader.result);
-          if(!data.blocks || !data.originalSentences) throw new Error('잘못된 파일입니다.');
-
+  // 불러오기
+  function loadSaveData(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        if(data && data.originalSentences && data.blocks && data.selectedWordsState && data.answerCorrectness) {
           originalSentences = data.originalSentences;
           blocks = data.blocks;
           selectedWordsState = data.selectedWordsState;
           answerCorrectness = data.answerCorrectness;
           currentBlockIdx = data.currentBlockIdx || 0;
-
           navTest.disabled = false;
           showPage('test');
-          renderCurrentBlock();
-
-          alert('학습 데이터를 성공적으로 불러왔습니다.');
-        } catch(err) {
-          alert('파일을 불러오는 중 오류가 발생했습니다.');
-          console.error(err);
+          renderTestBlock(currentBlockIdx);
+          updateReviewGraph();
+          showNotification('저장 데이터를 불러왔습니다.');
+        } else {
+          throw new Error('잘못된 데이터 형식입니다.');
         }
-      };
-      reader.readAsText(file);
-      // input 초기화 (같은 파일 다시 업로드 가능)
-      e.target.value = '';
+      } catch(e) {
+        showNotification('파일을 불러오는 중 오류가 발생했습니다.', true);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // 리뷰 그래프 그리기
+  function updateReviewGraph() {
+    const blockCount = blocks.length;
+    const width = reviewGraphCanvas.clientWidth;
+    const height = reviewGraphCanvas.clientHeight;
+    reviewGraphCanvas.width = width * devicePixelRatio;
+    reviewGraphCanvas.height = height * devicePixelRatio;
+    reviewGraphCtx.scale(devicePixelRatio, devicePixelRatio);
+
+    reviewGraphCtx.clearRect(0, 0, width, height);
+
+    if(blockCount === 0) {
+      reviewGraphCtx.fillStyle = '#034078';
+      reviewGraphCtx.font = '16px Segoe UI';
+      reviewGraphCtx.fillText('리뷰 그래프를 보려면 학습을 시작하세요.', 10, height/2);
+      return;
+    }
+
+    // X축 라벨 및 막대 그리기
+    const margin = 40;
+    const graphWidth = width - margin*2;
+    const graphHeight = height - margin*2;
+    const barWidth = graphWidth / blockCount * 0.6;
+    const gap = graphWidth / blockCount * 0.4;
+    const maxRate = 1;
+
+    // Y축 선 (0, 50%, 100%)
+    reviewGraphCtx.strokeStyle = '#aaccee';
+    reviewGraphCtx.lineWidth = 1;
+    reviewGraphCtx.font = '12px Segoe UI';
+    reviewGraphCtx.fillStyle = '#034078';
+    reviewGraphCtx.textAlign = 'right';
+
+    [0, 0.5, 1].forEach(rate => {
+      const y = margin + graphHeight * (1 - rate);
+      reviewGraphCtx.beginPath();
+      reviewGraphCtx.moveTo(margin, y);
+      reviewGraphCtx.lineTo(margin + graphWidth, y);
+      reviewGraphCtx.stroke();
+      reviewGraphCtx.fillText(`${rate*100}%`, margin - 5, y+4);
     });
 
-    // 초기 화면 세팅
-    showPage('home');
-  </script>
+    // 각 블록별 정답률 막대 그리기
+    for(let i=0; i<blockCount; i++) {
+      const blockAnswers = answerCorrectness[i];
+      let correctCount = 0;
+      if(blockAnswers) {
+        correctCount = blockAnswers.reduce((acc, v) => acc + (v ? 1 : 0), 0);
+      }
+      const total = blocks[i].length;
+      const rate = total ? correctCount / total : 0;
 
-</body>
-</html>
+      const x = margin + i * (barWidth + gap);
+      const y = margin + graphHeight * (1 - rate);
+      const barHeight = graphHeight * rate;
+
+      // 막대 색상 하늘색 계열로, 진한 파랑 대신 연한 색, 텍스트는 진한 파랑
+      reviewGraphCtx.fillStyle = '#89c7ff';
+      reviewGraphCtx.fillRect(x, y, barWidth, barHeight);
+
+      reviewGraphCtx.fillStyle = '#034078';
+      reviewGraphCtx.textAlign = 'center';
+      reviewGraphCtx.fillText(`${Math.round(rate*100)}%`, x + barWidth/2, y - 5);
+
+      reviewGraphCtx.fillStyle = '#034078';
+      reviewGraphCtx.textAlign = 'center';
+      reviewGraphCtx.fillText(`B${i+1}`, x + barWidth/2, margin + graphHeight + 15);
+    }
+  }
+
+  // 초기 화면 렌더링
+  updateReviewGraph();
+
+  // 초기 UI 스타일
+  const style = document.createElement('style');
+  style.textContent = `
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f0f4f8;
+      color: #034078;
+      margin: 0;
+      padding: 0 20px 40px 20px;
+    }
+    h1 {
+      color: #0288d1;
+    }
+    .pill {
+      display: inline-block;
+      background-color: #c7e0fb;
+      border-radius: 15px;
+      padding: 5px 12px;
+      margin: 3px;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.3s ease;
+      border: 1.5px solid #89c7ff;
+      color: #034078;
+      font-weight: 600;
+    }
+    .pill:hover {
+      background-color: #a1cdfd;
+      border-color: #56a6f9;
+    }
+    .pill.selected {
+      background-color: #034078;
+      color: #c7e0fb;
+      border-color: #034078;
+    }
+    .sentence-block {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.07);
+      padding: 18px 20px;
+      margin-bottom: 20px;
+    }
+    .sentence-label {
+      font-weight: 700;
+      margin-bottom: 10px;
+      font-size: 1.1em;
+    }
+    .user-line {
+      min-height: 40px;
+      border: 2px dashed #89c7ff;
+      border-radius: 10px;
+      padding: 6px 10px;
+      margin-bottom: 8px;
+      transition: border-color 0.3s ease;
+      color: #034078;
+      font-weight: 600;
+      user-select: none;
+    }
+    .user-line.wrong {
+      border-color: #b02a2a;
+      background-color: #f9d6d6;
+      color: #b02a2a;
+    }
+    .word-choices {
+      min-height: 40px;
+      margin-bottom: 10px;
+    }
+    button {
+      background-color: #89c7ff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-weight: 600;
+      color: #034078;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(50, 115, 220, 0.2);
+      transition: background-color 0.3s ease;
+      margin-right: 12px;
+    }
+    button:disabled {
+      background-color: #c1d9fb;
+      color: #6b8ca6;
+      cursor: default;
+      box-shadow: none;
+    }
+    button:hover:not(:disabled) {
+      background-color: #56a6f9;
+    }
+    #review-graph {
+      width: 100%;
+      height: 180px;
+      background-color: #e3f0fc;
+      border-radius: 14px;
+      box-shadow: inset 0 0 10px #bbe1ff;
+      margin-bottom: 24px;
+      user-select: none;
+    }
+    #notification {
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 20px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 15px;
+      display: none;
+      box-shadow: 0 4px 12px rgba(3,64,120,0.3);
+      z-index: 999;
+      max-width: 80%;
+      text-align: center;
+      pointer-events: none;
+    }
+    #header {
+      text-align: center;
+      margin-top: 14px;
+      margin-bottom: 30px;
+    }
+    #nav-test, #nav-input {
+      font-weight: 600;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #034078;
+      margin: 0 10px;
+      padding: 6px 16px;
+      border-radius: 14px;
+      box-shadow: inset 0 0 4px #89c7ff;
+      transition: box-shadow 0.3s ease;
+    }
+    #nav-test:disabled {
+      color: #c1d9fb;
+      box-shadow: none;
+      cursor: default;
+    }
+    #nav-test:hover:not(:disabled), #nav-input:hover {
+      box-shadow: 0 0 8px #56a6f9;
+    }
+    #input-area {
+      width: 100%;
+      height: 140px;
+      border-radius: 14px;
+      border: 2px solid #89c7ff;
+      padding: 14px 16px;
+      font-size: 1.1em;
+      resize: vertical;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #034078;
+      box-shadow: inset 0 0 8px #bbe1ff;
+      margin-bottom: 20px;
+    }
+    #controls {
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    #controls button {
+      margin-bottom: 8px;
+      min-width: 120px;
+    }
+  `;
+  document.head.appendChild(style);
+
+  // UI 초기화
+  navInput.addEventListener('click', () => {
+    showPage('input');
+  });
+  navTest.addEventListener('click', () => {
+    showPage('test');
+  });
+  prevBlockBtn.addEventListener('click', () => {
+    if(currentBlockIdx > 0) {
+      currentBlockIdx--;
+      renderTestBlock(currentBlockIdx);
+      updateReviewGraph();
+    }
+  });
+  nextBlockBtn.addEventListener('click', () => {
+    if(currentBlockIdx < blocks.length -1) {
+      currentBlockIdx++;
+      renderTestBlock(currentBlockIdx);
+      updateReviewGraph();
+    }
+  });
+  btnCheck.addEventListener('click', () => {
+    checkAnswers();
+  });
+  btnSave.addEventListener('click', () => {
+    downloadSaveData();
+  });
+  btnLoad.addEventListener('change', e => {
+    if(e.target.files.length > 0) {
+      loadSaveData(e.target.files[0]);
+    }
+  });
+
+  // 초기 페이지 표시
+  showPage('input');
+})();
