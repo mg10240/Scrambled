@@ -3,254 +3,234 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Word Scramble Review</title>
+  <title>Word Arrangement App</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-@font-face {
-    font-family: 'GowunBatang-Regular';
-    src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2108@1.1/GowunBatang-Regular.woff') format('woff');
-    font-weight: normal;
-    font-style: normal;
-}
     body {
-      font-family: 'SeoulHangangM', sans-serif;
-      background-color: #f5f5f5;
-      color: #222;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #fff;
+      color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      max-width: 700px;
+      text-align: center;
+      padding: 2rem;
     }
     .draggable {
-      padding: 8px 14px;
-      background-color: #000;
-      color: #fff;
-      border-radius: 8px;
-      cursor: grab;
+      display: inline-block;
+      padding: 8px 12px;
       margin: 4px;
-      user-select: none;
-      font-weight: 600;
-      transition: background-color 0.2s ease;
+      background: #eee;
+      color: #000;
+      border: 1px solid #aaa;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: background 0.2s;
     }
-    .draggable:active {
-      cursor: grabbing;
-      background-color: #444;
+    .draggable:hover {
+      background: #ccc;
     }
-    .drop-zone {
-      min-height: 60px;
-      border: 2px dashed #000;
-      border-radius: 10px;
+    #dropZone, #wordBank {
+      min-height: 50px;
+      margin: 1rem 0;
       padding: 10px;
-      background-color: #f9f9f9;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
+      border: 2px dashed #aaa;
+      border-radius: 8px;
     }
-    .wrong {
-      background-color: #ff0000 !important;
-      color: #fff !important;
+    button {
+      padding: 0.5rem 1rem;
+      margin: 0.5rem;
+      border: none;
+      background: #222;
+      color: #fff;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #444;
+    }
+    canvas {
+      background: #fff;
+      border: 1px solid #000;
     }
   </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
-  <div class="w-full max-w-4xl bg-white shadow-2xl rounded-2xl p-8">
-    <nav class="mb-6 flex justify-center gap-4">
-      <button onclick="showPage('home')" class="btn">Home</button>
-      <button onclick="showPage('test')" class="btn">Test</button>
-      <button onclick="showPage('result')" class="btn">Results</button>
-      <button onclick="showPage('settings')" class="btn">Settings</button>
-    </nav>
+<body>
+<div class="container">
+  <h2>Word Arrangement App</h2>
+  <input type="file" id="fileInput" accept=".txt" />
+  <button onclick="saveProgress()">Save</button>
+  <button onclick="loadProgress()">Load</button>
+  <button onclick="reviewWrongs()">Review Wrongs</button>
+  <p id="container"></p>
+  <div id="wordBank"></div>
+  <div id="dropZone"></div>
+  <button onclick="checkAnswer()">Check</button>
+  <canvas id="scoreChart" width="400" height="200"></canvas>
+</div>
 
-    <!-- Home -->
-    <div id="home" class="page">
-      <h1 class="text-4xl font-bold mb-4 text-center">Word Scramble</h1>
-      <p class="mb-4 text-center">.txt 또는 .csv 파일 업로드 (빈 줄 → 문단 구분, 없으면 10문장 묶음 처리)</p>
-      <div class="flex justify-center">
-        <input type="file" id="fileInput" accept=".txt,.csv" class="border p-2 rounded-md"/>
-      </div>
-    </div>
+<script>
+let blocks = [];
+let blockIndex = 0;
+let sentenceIndex = 0;
+let corrects = [];
+let blockWrongs = [];
+let reviewMode = false;
 
-    <!-- Test -->
-    <div id="test" class="page hidden">
-      <h2 class="text-2xl font-semibold mb-4 text-center">Scramble Test</h2>
-      <div id="sentenceContainer" class="mb-4 text-center font-medium"></div>
-      <div id="dropZone" class="drop-zone mb-4"></div>
-      <div class="flex justify-center gap-4">
-        <button id="checkButton" class="btn">Check Answer</button>
-        <button onclick="saveProgress()" class="btn">Save Progress</button>
-      </div>
-    </div>
+const container = document.getElementById("container");
+const wordBank = document.getElementById("wordBank");
+const dropZone = document.getElementById("dropZone");
+const chartCanvas = document.getElementById("scoreChart");
 
-    <!-- Results -->
-    <div id="result" class="page hidden">
-      <h2 class="text-2xl font-semibold mb-4 text-center">Retry Analysis</h2>
-      <canvas id="errorChart"></canvas>
-    </div>
+function cleanText(text) {
+  return text.replace(/[.,!?;:"'`~…―·]/g, "").trim();
+}
 
-    <!-- Settings -->
-    <div id="settings" class="page hidden">
-      <h2 class="text-2xl font-semibold mb-4 text-center">Settings</h2>
-      <div class="flex justify-center">
-        <button onclick="resetData()" class="btn bg-red-500 hover:bg-red-600 text-white">Reset All Data</button>
-      </div>
-    </div>
-  </div>
+function parseText(text) {
+  const sentences = text.split(/(?<=\.|!|\?)\s+/);
+  const chunks = [];
+  for (let i = 0; i < sentences.length; i += 10) {
+    chunks.push(sentences.slice(i, i + 10));
+  }
+  blocks = chunks;
+  corrects = chunks.map(block => Array(block.length).fill(false));
+  blockWrongs = chunks.map(() => []);
+  blockIndex = 0;
+  sentenceIndex = 0;
+  reviewMode = false;
+  loadSentence();
+}
 
-  <script>
-    let blocks = [], blockIndex=0, sentenceIndex=0;
-    let retryCounts = [], blockWrongs = [], reviewMode=false;
-    let chart, fileHash='';
+function loadSentence() {
+  const block = blocks[blockIndex];
+  const idx = reviewMode ? blockWrongs[blockIndex][sentenceIndex] : sentenceIndex;
+  const sentence = block[idx];
+  const cleanWords = sentence.split(' ').map(cleanText).filter(w => w);
+  const shuffled = [...cleanWords].sort(() => Math.random() - 0.5);
 
-    const fileInput = document.getElementById('fileInput');
-    const container = document.getElementById('sentenceContainer');
-    const dropZone = document.getElementById('dropZone');
-    const checkBtn = document.getElementById('checkButton');
-    const chartCanvas = document.getElementById('errorChart');
+  container.textContent = `Block ${blockIndex+1}/${blocks.length}, Sentence ${idx+1}/${block.length}`;
+  wordBank.innerHTML = "";
+  dropZone.innerHTML = "";
 
-    fileInput.onchange = async e => {
-      const text = await e.target.files[0].text();
-      fileHash = await hashString(text);
-      const lines = text.split(/\r?\n/);
-      if (!localStorage.getItem('scramble_'+fileHash)){
-        const paras = [];
-        let cur = [];
-        lines.forEach(l => {
-          if (l.trim()===''){
-            if (cur.length){ paras.push(cur); cur=[]; }
-          } else cur.push(l.replace(/\.$/,''));
-        });
-        if (cur.length) paras.push(cur);
-        if (!paras.length) {
-          const flat = lines.filter(l=>l.trim()).map(l=>l.replace(/\.$/,''));
-          for (let i=0;i<flat.length;i+=10) blocks.push(flat.slice(i,i+10));
-        } else blocks = paras;
-        blocks = blocks.filter(b=>b.length);
-        retryCounts = blocks.map(b=>Array(b.length).fill(0));
-        blockIndex=sentenceIndex=0; reviewMode=false;
-        saveProgress();
-      }
-      loadProgress();
+  shuffled.forEach(word => {
+    const btn = document.createElement("button");
+    btn.className = "draggable";
+    btn.textContent = word;
+    btn.onclick = () => {
+      if ([...dropZone.children].find(e => e.textContent === word)) return;
+      const w = document.createElement("button");
+      w.textContent = word;
+      w.className = "draggable";
+      w.onclick = () => dropZone.removeChild(w);
+      dropZone.appendChild(w);
     };
+    wordBank.appendChild(btn);
+  });
+}
 
-    function loadSentence(){
-      dropZone.innerHTML='';
-      container.innerHTML='';
-      const block = blocks[blockIndex];
-      if (!reviewMode && sentenceIndex >= block.length){
-        const wrongs = retryCounts[blockIndex]
-          .map((c,i)=>c>0?i:-1).filter(i=>i>=0);
-        if (wrongs.length){ reviewMode=true; blockWrongs = wrongs; sentenceIndex=0; }
-        else { goNextBlock(); return; }
-      }
-      if (reviewMode && sentenceIndex>=blockWrongs.length){ goNextBlock(); return; }
-      const idx = reviewMode ? blockWrongs[sentenceIndex] : sentenceIndex;
-      const sent = blocks[blockIndex][idx];
-      const words = sent.split(' ').sort(()=>Math.random()-0.5);
-      container.textContent = `Block ${blockIndex+1}/${blocks.length}, Sentence ${idx+1}/${block.length}`;
-      words.forEach(w=>{
-        const sp = document.createElement('span');
-        sp.textContent = w;
-        sp.draggable=true; sp.className='draggable';
-        sp.ondragstart=e=>e.dataTransfer.setData('text/plain',w);
-        dropZone.appendChild(sp);
-      });
-    }
+function checkAnswer() {
+  const dropWords = [...dropZone.children].map(e => e.textContent);
+  const block = blocks[blockIndex];
+  const idx = reviewMode ? blockWrongs[blockIndex][sentenceIndex] : sentenceIndex;
+  const sentence = block[idx];
+  const correctWords = sentence.split(' ').map(cleanText).filter(w => w);
+  const isCorrect = JSON.stringify(dropWords) === JSON.stringify(correctWords);
+  corrects[blockIndex][idx] = isCorrect;
 
-    dropZone.ondragover = e=>e.preventDefault();
-    dropZone.ondrop = e=>{
-      e.preventDefault();
-      const w = e.dataTransfer.getData('text/plain');
-      const el = Array.from(dropZone.children).find(c=>c.textContent===w);
-      if (el) dropZone.appendChild(el);
-    };
+  if (!isCorrect && !reviewMode) blockWrongs[blockIndex].push(idx);
 
-    checkBtn.onclick = ()=>{
-      const block = blocks[blockIndex];
-      const idx = reviewMode ? blockWrongs[sentenceIndex] : sentenceIndex;
-      const user = Array.from(dropZone.children).map(c=>c.textContent);
-      const correct = block[idx].split(' ');
-      let wrong=false;
-      dropZone.childNodes.forEach((el,i)=>{
-        if (el.textContent!==correct[i]){
-          el.classList.add('wrong'); wrong=true;
-        } else el.classList.remove('wrong');
-      });
-      if (wrong) retryCounts[blockIndex][idx]++; else sentenceIndex++;
-      saveProgress(); updateChart();
-      setTimeout(loadSentence, 500);
-    };
+  if (sentenceIndex + 1 < (reviewMode ? blockWrongs[blockIndex].length : block.length)) {
+    sentenceIndex++;
+  } else if (blockIndex + 1 < blocks.length) {
+    blockIndex++;
+    sentenceIndex = 0;
+  } else {
+    alert("모든 문장을 완료했습니다.");
+    showChart();
+    return;
+  }
+  loadSentence();
+}
 
-    function goNextBlock(){
-      blockIndex++; sentenceIndex=0; reviewMode=false;
-      if (blockIndex>=blocks.length){
-        container.innerHTML='<strong class="text-green-600">🎉 모든 블록 완료!</strong>';
-        return;
-      }
-      loadSentence();
-    }
+function saveProgress() {
+  localStorage.setItem("progress_blocks", JSON.stringify(blocks));
+  localStorage.setItem("progress_corrects", JSON.stringify(corrects));
+  localStorage.setItem("progress_wrongs", JSON.stringify(blockWrongs));
+  localStorage.setItem("progress_blockIndex", blockIndex);
+  localStorage.setItem("progress_sentenceIndex", sentenceIndex);
+  alert("저장 완료");
+}
 
-    function updateChart(){
-      const flat = retryCounts.flat();
-      const labels = flat.map((_,i)=>`#${i+1}`);
-      chart?.destroy();
-      chart = new Chart(chartCanvas,{
-        type:'bar',
-        data:{
-          labels, datasets:[{
-            label:'Retry',
-            data:flat,
-            backgroundColor:'#66c2a5',
-            borderColor:'#2e8b57',
-            borderWidth:1
-          }]
+function loadProgress() {
+  const b = localStorage.getItem("progress_blocks");
+  if (!b) return alert("저장된 데이터가 없습니다.");
+  blocks = JSON.parse(b);
+  corrects = JSON.parse(localStorage.getItem("progress_corrects"));
+  blockWrongs = JSON.parse(localStorage.getItem("progress_wrongs"));
+  blockIndex = +localStorage.getItem("progress_blockIndex");
+  sentenceIndex = +localStorage.getItem("progress_sentenceIndex");
+  reviewMode = false;
+  loadSentence();
+}
+
+function reviewWrongs() {
+  reviewMode = true;
+  sentenceIndex = 0;
+  loadSentence();
+}
+
+function showChart() {
+  const scores = corrects.map(arr => arr.filter(Boolean).length / arr.length * 100);
+  new Chart(chartCanvas, {
+    type: 'bar',
+    data: {
+      labels: scores.map((_, i) => `Block ${i + 1}`),
+      datasets: [{
+        label: 'Accuracy (%)',
+        data: scores,
+        borderColor: '#000',
+        backgroundColor: '#fff',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          ticks: {
+            color: '#000'
+          }
         },
-        options: {
-          plugins: { legend: { labels: { color: '#000' } } },
-          scales: {
-            x: { ticks: { color: '#000' } },
-            y: { beginAtZero: true, ticks: { color: '#000' } }
+        x: {
+          ticks: {
+            color: '#000'
           }
         }
-      });
+      },
+      plugins: {
+        legend: {
+          labels: {
+            color: '#000'
+          }
+        }
+      }
     }
+  });
+}
 
-    function saveProgress(){
-      if (!fileHash) return;
-      localStorage.setItem('scramble_'+fileHash, JSON.stringify({
-        blocks, retryCounts, blockIndex, sentenceIndex, reviewMode
-      }));
-    }
-    function loadProgress(){
-      const raw = fileHash && localStorage.getItem('scramble_'+fileHash);
-      if (!raw) return;
-      const d = JSON.parse(raw);
-      Object.assign(window, d);
-      updateChart(); showPage('test'); loadSentence();
-    }
-    function resetData(){
-      if (!fileHash) return localStorage.removeItem('scramble_'+fileHash);
-      location.reload();
-    }
-    function showPage(p){
-      document.querySelectorAll('.page').forEach(e=>e.classList.add('hidden'));
-      document.getElementById(p).classList.remove('hidden');
-    }
-    async function hashString(s){
-      const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
-      return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('');
-    }
-  </script>
-  <style>
-    .btn {
-      padding: 10px 16px;
-      border-radius: 9999px;
-      font-weight: 600;
-      border: 2px solid #000;
-      background-color: #fff;
-      color: #000;
-      transition: all 0.3s ease;
-    }
-    .btn:hover {
-      background-color: #000;
-      color: #fff;
-    }
-  </style>
+document.getElementById("fileInput").addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => parseText(evt.target.result);
+  reader.readAsText(file);
+});
+</script>
 </body>
 </html>
