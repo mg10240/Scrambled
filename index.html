@@ -1,210 +1,221 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Word Scramble Review</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.js"></script>
   <style>
+    body { background-color: #111; color: #EEE; }
     .draggable {
-      padding: 6px 12px;
-      background-color: #f3f4f6;
-      border-radius: 0.5rem;
-      cursor: grab;
-      margin: 2px;
-      transition: background-color 0.2s;
+      padding: 6px 12px; background-color: #333;
+      border-radius: 0.5rem; cursor: grab;
+      margin: 4px; transition: background-color 0.2s;
+      color: #EEE;
     }
     .drop-zone {
-      min-height: 3rem;
-      border: 2px dashed #d1d5db;
-      border-radius: 0.5rem;
-      padding: 0.5rem;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      transition: background-color 0.3s;
+      min-height: 3rem; border: 2px dashed #555;
+      border-radius: 0.5rem; padding: 8px;
+      background-color: #1a1a1a; display: flex;
+      flex-wrap: wrap; gap: 6px;
     }
-    .wrong { background-color: #fee2e2 !important; }
+    .wrong { background-color: #800 !important; }
+    .page .title { color: #FFF; }
+    .btn { padding: 10px 16px; border-radius: 6px; font-weight: 500; }
+    .btn-primary { background-color: #0055AA; color: #FFF; }
+    .btn-accent { background-color: #009988; color: #FFF; }
+    .btn-danger { background-color: #AA0000; color: #FFF; }
     .hidden { display: none; }
   </style>
 </head>
-<body class="bg-gray-100 p-4">
-  <div class="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow-lg">
-    <nav class="mb-4 flex space-x-4">
-      <button onclick="showPage('home')" class="text-blue-600 font-medium">Home</button>
-      <button onclick="showPage('test')" class="text-blue-600 font-medium">Test</button>
-      <button onclick="showPage('result')" class="text-blue-600 font-medium">Results</button>
-      <button onclick="showPage('settings')" class="text-blue-600 font-medium">Settings</button>
+<body class="p-6">
+  <div class="max-w-4xl mx-auto bg-gray-900 p-6 rounded-xl shadow-xl">
+    <nav class="mb-6 flex space-x-4">
+      <button onclick="showPage('home')" class="btn btn-primary">Home</button>
+      <button onclick="showPage('test')" class="btn btn-primary">Test</button>
+      <button onclick="showPage('result')" class="btn btn-primary">Results</button>
+      <button onclick="showPage('settings')" class="btn btn-primary">Settings</button>
     </nav>
 
     <!-- Home -->
     <div id="home" class="page">
-      <h1 class="text-2xl font-bold mb-4">Word Scramble</h1>
-      <p class="mb-2">Upload a .txt or .csv file (each line = 한 문장)</p>
-      <input type="file" id="fileInput" accept=".txt,.csv" class="mb-4" />
+      <h1 class="text-3xl font-bold mb-4 title">Word Scramble</h1>
+      <p class="mb-2">.txt 또는 .csv 파일 업로드 (빈 줄 → 문단 구분, 없으면 10문장 묶음 처리)</p>
+      <input type="file" id="fileInput" accept=".txt,.csv" class="mb-4"/>
     </div>
 
     <!-- Test -->
     <div id="test" class="page hidden">
-      <h2 class="text-xl font-semibold mb-2">Scramble Test</h2>
+      <h2 class="text-2xl font-semibold mb-2 title">Scramble Test</h2>
       <div id="sentenceContainer" class="mb-4"></div>
-      <div class="drop-zone" id="dropZone"></div>
-      <div class="mt-4 flex space-x-2">
-        <button id="checkButton" class="bg-blue-600 text-white px-4 py-2 rounded">Check Answer</button>
-        <button onclick="saveProgress()" class="bg-green-600 text-white px-4 py-2 rounded">Save Progress</button>
+      <div id="dropZone" class="drop-zone mb-4"></div>
+      <div class="flex space-x-2">
+        <button id="checkButton" class="btn btn-accent">Check Answer</button>
+        <button onclick="saveProgress()" class="btn btn-primary">Save Progress</button>
       </div>
     </div>
 
     <!-- Results -->
     <div id="result" class="page hidden">
-      <h2 class="text-xl font-semibold mb-2">Retry Analysis</h2>
-      <canvas id="errorChart" width="400" height="200"></canvas>
+      <h2 class="text-2xl font-semibold mb-2 title">Retry Analysis</h2>
+      <canvas id="errorChart"></canvas>
     </div>
 
     <!-- Settings -->
     <div id="settings" class="page hidden">
-      <h2 class="text-xl font-semibold mb-2">Settings</h2>
-      <button onclick="resetData()" class="bg-red-600 text-white px-4 py-2 rounded">Reset All Data</button>
+      <h2 class="text-2xl font-semibold mb-2 title">Settings</h2>
+      <button onclick="resetData()" class="btn btn-danger">Reset All Data</button>
     </div>
   </div>
 
   <script>
-    let sentences = [],
-        retryCounts = [],
-        currentSentenceIndex = 0,
-        wrongIndexes = [],
-        reviewMode = false,
-        chart, fileHash = '';
+    let blocks = [], blockIndex=0, sentenceIndex=0;
+    let retryCounts = [], blockWrongs = [], reviewMode=false;
+    let chart, fileHash='';
 
-    const fileInput = document.getElementById('fileInput'),
-          container = document.getElementById('sentenceContainer'),
-          dropZone = document.getElementById('dropZone'),
-          checkBtn = document.getElementById('checkButton'),
-          chartCanvas = document.getElementById('errorChart');
+    const fileInput = document.getElementById('fileInput');
+    const container = document.getElementById('sentenceContainer');
+    const dropZone = document.getElementById('dropZone');
+    const checkBtn = document.getElementById('checkButton');
+    const chartCanvas = document.getElementById('errorChart');
 
     fileInput.onchange = async e => {
-      const file = e.target.files[0];
-      const content = await file.text();
-      fileHash = await hashString(content);
-      const lines = content.split(/\r?\n/).filter(Boolean).map(l => l.replace(/\.$/, ''));
-      if (!localStorage.getItem('scramble_' + fileHash)) {
-        sentences = lines;
-        retryCounts = Array(lines.length).fill(0);
-        currentSentenceIndex = 0;
-        reviewMode = false;
+      const text = await e.target.files[0].text();
+      fileHash = await hashString(text);
+      const lines = text.split(/\r?\n/);
+      if (!localStorage.getItem('scramble_'+fileHash)){
+        const paras = [];
+        let cur = [];
+        lines.forEach(l => {
+          if (l.trim()===''){
+            if (cur.length){ paras.push(cur); cur=[]; }
+          } else cur.push(l.replace(/\.$/,''));
+        });
+        if (cur.length) paras.push(cur);
+        if (!paras.length) {
+          // no paragraphs → create 10-sentence blocks
+          const flat = lines.filter(l=>l.trim()).map(l=>l.replace(/\.$/,''));
+          for (let i=0;i<flat.length;i+=10) blocks.push(flat.slice(i,i+10));
+        } else blocks = paras;
+        blocks = blocks.filter(b=>b.length);
+        retryCounts = blocks.map(b=>Array(b.length).fill(0));
+        blockIndex=sentenceIndex=0;
+        reviewMode=false;
         saveProgress();
       }
       loadProgress();
     };
 
-    function loadSentence() {
-      dropZone.innerHTML = '';
-      container.innerHTML = '';
-      if (!reviewMode && currentSentenceIndex >= sentences.length) {
-        wrongIndexes = retryCounts.map((c,i)=>c>0?i:-1).filter(i=>i>=0);
-        if (wrongIndexes.length > 0) {
-          reviewMode = true;
-          currentSentenceIndex = 0;
-          alert('Review Mode: 틀린 문장만 다시 풀기 시작합니다.');
+    function loadSentence(){
+      dropZone.innerHTML='';
+      container.innerHTML='';
+      const block = blocks[blockIndex];
+      if (!reviewMode && sentenceIndex >= block.length){
+        // switch to review for wrong ones
+        const wrongs = retryCounts[blockIndex]
+          .map((c,i)=>c>0?i:-1).filter(i=>i>=0);
+        if (wrongs.length){
+          reviewMode=true; blockWrongs = wrongs; sentenceIndex=0;
         } else {
-          container.innerHTML = '<strong>🎉 모든 문장을 완벽히 완료했습니다!</strong>';
-          return;
+          goNextBlock(); return;
         }
-      } else if (reviewMode && currentSentenceIndex >= wrongIndexes.length) {
-        container.innerHTML = '<strong>🎉 모든 틀린 문장 리뷰 완료!</strong>';
-        return;
       }
-
-      const idx = reviewMode ? wrongIndexes[currentSentenceIndex] : currentSentenceIndex;
-      const sentence = sentences[idx];
-      const words = sentence.split(' ');
-      const scrambled = words.sort(() => Math.random() - 0.5);
-      scrambled.forEach(w => {
-        const span = document.createElement('span');
-        span.textContent = w;
-        span.draggable = true;
-        span.className = 'draggable';
-        span.ondragstart = e => e.dataTransfer.setData('text/plain', w);
-        dropZone.appendChild(span);
+      if (reviewMode && sentenceIndex>=blockWrongs.length){
+        goNextBlock(); return;
+      }
+      const idx = reviewMode ? blockWrongs[sentenceIndex] : sentenceIndex;
+      const sent = blocks[blockIndex][idx];
+      const words = sent.split(' ').sort(()=>Math.random()-0.5);
+      container.textContent = `Block ${blockIndex+1}/${blocks.length}, Sentence ${idx+1}/${blocks[blockIndex].length}`;
+      words.forEach(w=>{
+        const sp = document.createElement('span');
+        sp.textContent = w;
+        sp.draggable=true; sp.className='draggable';
+        sp.ondragstart=e=>e.dataTransfer.setData('text/plain',w);
+        dropZone.appendChild(sp);
       });
     }
 
-    dropZone.ondragover = e => e.preventDefault();
-    dropZone.ondrop = e => {
+    dropZone.ondragover = e=>e.preventDefault();
+    dropZone.ondrop = e=>{
       e.preventDefault();
-      const w = e.dataTransfer.getData('text/plain'),
-            el = Array.from(dropZone.children).find(c => c.textContent === w);
+      const w = e.dataTransfer.getData('text/plain');
+      const el = Array.from(dropZone.children).find(c=>c.textContent===w);
       if (el) dropZone.appendChild(el);
     };
 
-    checkBtn.onclick = () => {
-      const idx = reviewMode ? wrongIndexes[currentSentenceIndex] : currentSentenceIndex;
+    checkBtn.onclick = ()=>{
+      const block = blocks[blockIndex];
+      const idx = reviewMode ? blockWrongs[sentenceIndex] : sentenceIndex;
       const user = Array.from(dropZone.children).map(c=>c.textContent);
-      const correct = sentences[idx].split(' ');
-      let wrong = false;
-      dropZone.childNodes.forEach((el,i)=> {
-        if (el.textContent !== correct[i]) {
-          el.classList.add('wrong');
-          wrong = true;
+      const correct = block[idx].split(' ');
+      let wrong=false;
+      dropZone.childNodes.forEach((el,i)=>{
+        if (el.textContent!==correct[i]){
+          el.classList.add('wrong'); wrong=true;
         } else el.classList.remove('wrong');
       });
-      if (wrong) retryCounts[idx]++, updateChart();
-      else currentSentenceIndex++;
-      saveProgress();
+      if (wrong) retryCounts[blockIndex][idx]++; else sentenceIndex++;
+      saveProgress(); updateChart();
       setTimeout(loadSentence, 500);
     };
 
-    function updateChart() {
-      const data = {
-        labels: sentences.map((_,i)=> `#${i+1}`),
-        datasets: [{
-          label: 'Retry Count',
-          data: retryCounts,
-          backgroundColor:'rgba(255,99,132,0.5)',
-          borderColor:'rgba(255,99,132,1)', borderWidth:1
-        }]
-      };
-      if (chart) chart.destroy();
+    function goNextBlock(){
+      blockIndex++; sentenceIndex=0; reviewMode=false;
+      if (blockIndex>=blocks.length){
+        container.innerHTML='<strong>🎉 모든 블록 완료!</strong>';
+        return;
+      }
+      loadSentence();
+    }
+
+    function updateChart(){
+      const flat = retryCounts.flat();
+      const labels = flat.map((_,i)=>`#${i+1}`);
+      chart?.destroy();
       chart = new Chart(chartCanvas,{
-        type:'bar', data, options:{
-          scales:{ y:{ beginAtZero:true, precision:0 } }
+        type:'bar',
+        data:{
+          labels, datasets:[{
+            label:'Retry',
+            data:flat,
+            backgroundColor:'#66c2a5',
+            borderColor:'#2e8b57', borderWidth:1
+          }]
+        },
+        options:{
+          plugins:{
+            legend:{ labels:{ color:'#EEE'} }
+          },
+          scales:{
+            x:{ ticks:{ color:'#EEE' } },
+            y:{ beginAtZero:true, ticks:{ color:'#EEE' }}
+          }
         }
       });
     }
 
-    function saveProgress() {
+    function saveProgress(){
       if (!fileHash) return;
-      localStorage.setItem('scramble_' + fileHash,
-        JSON.stringify({ sentences, retryCounts, currentSentenceIndex, reviewMode }));
+      localStorage.setItem('scramble_'+fileHash, JSON.stringify({
+        blocks, retryCounts, blockIndex, sentenceIndex, reviewMode
+      }));
     }
-
-    function loadProgress() {
-      const raw = fileHash && localStorage.getItem('scramble_' + fileHash);
+    function loadProgress(){
+      const raw = fileHash && localStorage.getItem('scramble_'+fileHash);
       if (!raw) return;
-      const data = JSON.parse(raw);
-      sentences = data.sentences;
-      retryCounts = data.retryCounts;
-      currentSentenceIndex = data.currentSentenceIndex;
-      reviewMode = data.reviewMode;
-      updateChart();
-      showPage('test');
-      loadSentence();
+      const d = JSON.parse(raw);
+      Object.assign(window, d);
+      updateChart(); showPage('test'); loadSentence();
     }
-
-    function resetData() {
-      if (fileHash) localStorage.removeItem('scramble_' + fileHash);
+    function resetData(){
+      if (!fileHash) return localStorage.removeItem('scramble_'+fileHash);
       location.reload();
     }
-
-    function showPage(page) {
-      document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));
-      document.getElementById(page).classList.remove('hidden');
-    }
-
-    async function hashString(str) {
-      const buf = new TextEncoder().encode(str);
-      const h = await crypto.subtle.digest('SHA-256', buf);
+    function showPage(p){ document.querySelectorAll('.page').forEach(e=>e.classList.add('hidden')); document.getElementById(p).classList.remove('hidden'); }
+    async function hashString(s){
+      const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
       return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('');
     }
   </script>
