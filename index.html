@@ -9,38 +9,39 @@
   <style>
     .draggable {
       padding: 6px 12px;
-      background-color: #e5e7eb;
+      background-color: #f3f4f6;
       border-radius: 0.5rem;
-      cursor: move;
+      cursor: grab;
       margin: 2px;
-      display: inline-block;
+      transition: background-color 0.2s;
     }
     .drop-zone {
-      min-height: 2rem;
-      border: 2px dashed #ccc;
+      min-height: 3rem;
+      border: 2px dashed #d1d5db;
       border-radius: 0.5rem;
       padding: 0.5rem;
       display: flex;
       flex-wrap: wrap;
+      gap: 4px;
+      transition: background-color 0.3s;
     }
-    .wrong {
-      background-color: #fecaca !important;
-    }
+    .wrong { background-color: #fee2e2 !important; }
     .hidden { display: none; }
   </style>
 </head>
 <body class="bg-gray-100 p-4">
-  <div class="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow">
-    <nav class="mb-4 space-x-4">
-      <button onclick="showPage('home')" class="text-blue-600">Home</button>
-      <button onclick="showPage('test')" class="text-blue-600">Test</button>
-      <button onclick="showPage('result')" class="text-blue-600">Results</button>
+  <div class="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow-lg">
+    <nav class="mb-4 flex space-x-4">
+      <button onclick="showPage('home')" class="text-blue-600 font-medium">Home</button>
+      <button onclick="showPage('test')" class="text-blue-600 font-medium">Test</button>
+      <button onclick="showPage('result')" class="text-blue-600 font-medium">Results</button>
+      <button onclick="showPage('settings')" class="text-blue-600 font-medium">Settings</button>
     </nav>
 
     <!-- Home -->
     <div id="home" class="page">
       <h1 class="text-2xl font-bold mb-4">Word Scramble</h1>
-      <p class="mb-2">Upload a .txt or .csv file (each line = 1 sentence)</p>
+      <p class="mb-2">Upload a .txt or .csv file (each line = 한 문장)</p>
       <input type="file" id="fileInput" accept=".txt,.csv" class="mb-4" />
     </div>
 
@@ -49,10 +50,9 @@
       <h2 class="text-xl font-semibold mb-2">Scramble Test</h2>
       <div id="sentenceContainer" class="mb-4"></div>
       <div class="drop-zone" id="dropZone"></div>
-      <div class="mt-4 space-x-2">
+      <div class="mt-4 flex space-x-2">
         <button id="checkButton" class="bg-blue-600 text-white px-4 py-2 rounded">Check Answer</button>
         <button onclick="saveProgress()" class="bg-green-600 text-white px-4 py-2 rounded">Save Progress</button>
-        <button onclick="loadProgress()" class="bg-yellow-500 text-white px-4 py-2 rounded">Load Progress</button>
       </div>
     </div>
 
@@ -61,52 +61,71 @@
       <h2 class="text-xl font-semibold mb-2">Retry Analysis</h2>
       <canvas id="errorChart" width="400" height="200"></canvas>
     </div>
+
+    <!-- Settings -->
+    <div id="settings" class="page hidden">
+      <h2 class="text-xl font-semibold mb-2">Settings</h2>
+      <button onclick="resetData()" class="bg-red-600 text-white px-4 py-2 rounded">Reset All Data</button>
+    </div>
   </div>
 
   <script>
-    let sentences = [];
-    let currentSentenceIndex = 0;
-    let retryCounts = [];
-    let chart;
-    let fileHash = '';
+    let sentences = [],
+        retryCounts = [],
+        currentSentenceIndex = 0,
+        wrongIndexes = [],
+        reviewMode = false,
+        chart, fileHash = '';
 
-    const fileInput = document.getElementById('fileInput');
-    const container = document.getElementById('sentenceContainer');
-    const dropZone = document.getElementById('dropZone');
-    const checkButton = document.getElementById('checkButton');
-    const chartCanvas = document.getElementById('errorChart');
+    const fileInput = document.getElementById('fileInput'),
+          container = document.getElementById('sentenceContainer'),
+          dropZone = document.getElementById('dropZone'),
+          checkBtn = document.getElementById('checkButton'),
+          chartCanvas = document.getElementById('errorChart');
 
-    fileInput.onchange = async (e) => {
+    fileInput.onchange = async e => {
       const file = e.target.files[0];
       const content = await file.text();
       fileHash = await hashString(content);
-      const lines = content.split(/\r?\n/);
-      sentences = lines.filter(Boolean).map(l => l.replace(/\.$/, ''));
-      retryCounts = new Array(sentences.length).fill(0);
-      currentSentenceIndex = 0;
-      saveProgress();
+      const lines = content.split(/\r?\n/).filter(Boolean).map(l => l.replace(/\.$/, ''));
+      if (!localStorage.getItem('scramble_' + fileHash)) {
+        sentences = lines;
+        retryCounts = Array(lines.length).fill(0);
+        currentSentenceIndex = 0;
+        reviewMode = false;
+        saveProgress();
+      }
       loadProgress();
-      loadSentence();
-      showPage('test');
     };
 
     function loadSentence() {
       dropZone.innerHTML = '';
       container.innerHTML = '';
-      if (currentSentenceIndex >= sentences.length) {
-        container.innerHTML = '<strong>All done!</strong>';
+      if (!reviewMode && currentSentenceIndex >= sentences.length) {
+        wrongIndexes = retryCounts.map((c,i)=>c>0?i:-1).filter(i=>i>=0);
+        if (wrongIndexes.length > 0) {
+          reviewMode = true;
+          currentSentenceIndex = 0;
+          alert('Review Mode: 틀린 문장만 다시 풀기 시작합니다.');
+        } else {
+          container.innerHTML = '<strong>🎉 모든 문장을 완벽히 완료했습니다!</strong>';
+          return;
+        }
+      } else if (reviewMode && currentSentenceIndex >= wrongIndexes.length) {
+        container.innerHTML = '<strong>🎉 모든 틀린 문장 리뷰 완료!</strong>';
         return;
       }
-      const sentence = sentences[currentSentenceIndex];
-      const words = sentence.split(' ');
-      const scrambled = [...words].sort(() => Math.random() - 0.5);
 
-      scrambled.forEach(word => {
+      const idx = reviewMode ? wrongIndexes[currentSentenceIndex] : currentSentenceIndex;
+      const sentence = sentences[idx];
+      const words = sentence.split(' ');
+      const scrambled = words.sort(() => Math.random() - 0.5);
+      scrambled.forEach(w => {
         const span = document.createElement('span');
-        span.textContent = word;
+        span.textContent = w;
         span.draggable = true;
         span.className = 'draggable';
-        span.ondragstart = (e) => e.dataTransfer.setData('text', e.target.textContent);
+        span.ondragstart = e => e.dataTransfer.setData('text/plain', w);
         dropZone.appendChild(span);
       });
     }
@@ -114,100 +133,80 @@
     dropZone.ondragover = e => e.preventDefault();
     dropZone.ondrop = e => {
       e.preventDefault();
-      const word = e.dataTransfer.getData('text');
-      const el = Array.from(dropZone.children).find(child => child.textContent === word);
-      if (el) {
-        dropZone.removeChild(el);
-        dropZone.appendChild(el);
-      }
+      const w = e.dataTransfer.getData('text/plain'),
+            el = Array.from(dropZone.children).find(c => c.textContent === w);
+      if (el) dropZone.appendChild(el);
     };
 
-    checkButton.onclick = () => {
-      const userWords = Array.from(dropZone.children).map(el => el.textContent);
-      const correctWords = sentences[currentSentenceIndex].split(' ');
+    checkBtn.onclick = () => {
+      const idx = reviewMode ? wrongIndexes[currentSentenceIndex] : currentSentenceIndex;
+      const user = Array.from(dropZone.children).map(c=>c.textContent);
+      const correct = sentences[idx].split(' ');
       let wrong = false;
-      dropZone.childNodes.forEach((el, i) => {
-        if (el.textContent !== correctWords[i]) {
+      dropZone.childNodes.forEach((el,i)=> {
+        if (el.textContent !== correct[i]) {
           el.classList.add('wrong');
           wrong = true;
-        } else {
-          el.classList.remove('wrong');
-        }
+        } else el.classList.remove('wrong');
       });
-      if (wrong) {
-        retryCounts[currentSentenceIndex]++;
-        updateChart();
-      } else {
-        currentSentenceIndex++;
-        loadSentence();
-      }
+      if (wrong) retryCounts[idx]++, updateChart();
+      else currentSentenceIndex++;
       saveProgress();
+      setTimeout(loadSentence, 500);
     };
 
     function updateChart() {
       const data = {
-        labels: sentences.map((_, i) => `#${i + 1}`),
+        labels: sentences.map((_,i)=> `#${i+1}`),
         datasets: [{
           label: 'Retry Count',
           data: retryCounts,
-          backgroundColor: 'rgba(255, 99, 132, 0.5)',
-          borderColor: 'rgba(255, 99, 132, 1)',
-          borderWidth: 1
+          backgroundColor:'rgba(255,99,132,0.5)',
+          borderColor:'rgba(255,99,132,1)', borderWidth:1
         }]
       };
       if (chart) chart.destroy();
-      chart = new Chart(chartCanvas, {
-        type: 'bar',
-        data,
-        options: {
-          scales: {
-            y: {
-              beginAtZero: true,
-              precision: 0
-            }
-          }
+      chart = new Chart(chartCanvas,{
+        type:'bar', data, options:{
+          scales:{ y:{ beginAtZero:true, precision:0 } }
         }
       });
     }
 
     function saveProgress() {
       if (!fileHash) return;
-      const data = {
-        sentences,
-        retryCounts,
-        currentSentenceIndex
-      };
-      localStorage.setItem('scramble_' + fileHash, JSON.stringify(data));
+      localStorage.setItem('scramble_' + fileHash,
+        JSON.stringify({ sentences, retryCounts, currentSentenceIndex, reviewMode }));
     }
 
     function loadProgress() {
-      if (!fileHash) return;
-      const raw = localStorage.getItem('scramble_' + fileHash);
+      const raw = fileHash && localStorage.getItem('scramble_' + fileHash);
       if (!raw) return;
       const data = JSON.parse(raw);
-      sentences = data.sentences || [];
-      retryCounts = data.retryCounts || [];
-      currentSentenceIndex = data.currentSentenceIndex || 0;
-      loadSentence();
+      sentences = data.sentences;
+      retryCounts = data.retryCounts;
+      currentSentenceIndex = data.currentSentenceIndex;
+      reviewMode = data.reviewMode;
       updateChart();
       showPage('test');
+      loadSentence();
+    }
+
+    function resetData() {
+      if (fileHash) localStorage.removeItem('scramble_' + fileHash);
+      location.reload();
     }
 
     function showPage(page) {
-      document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+      document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));
       document.getElementById(page).classList.remove('hidden');
     }
 
     async function hashString(str) {
-      const buffer = new TextEncoder().encode(str);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      const buf = new TextEncoder().encode(str);
+      const h = await crypto.subtle.digest('SHA-256', buf);
+      return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('');
     }
-
-    window.onload = () => {
-      // No auto-load: must load file to get hash first
-    };
   </script>
 </body>
 </html>
